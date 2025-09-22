@@ -1,9 +1,12 @@
 {
+  "homepage": "https://cosicoangeluu.github.io/schedulink",
   "name": "next-app",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "cross-env NODE_ENV=development next dev -H 0.0.0.0 -p 3000",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build",
     "build": "next build",
     "lint": "next lint"
   },
@@ -21,6 +24,7 @@
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.21",
     "cross-env": "^7.0.3",
+    "eslint": "^9.35.0",
     "gh-pages": "^6.3.0",
     "postcss": "^8.5.5",
     "tailwindcss": "^3.4.17",
