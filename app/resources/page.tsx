@@ -5,15 +5,12 @@ import Sidebar from '../../components/Sidebar';
 import AddResourceModal from './AddResourceModal';
 import ResourceCard from './ResourceCard';
 
-interface Resource {
-  id: number;
+export interface Resource {
+  id: string;
   name: string;
-  total: number;
-  available: number;
-  inUse: number;
   status: string;
-  location: string;
-  condition: string;
+  category: string; // Make sure this is present
+  // ...other properties...
 }
 
 const facilities = [
@@ -158,3 +155,11 @@ export default function ResourcesPage() {
     </div>
   );
 }
+
+const resource: Resource = {
+  id: "1",
+  name: "Sample Resource",
+  status: "active",
+  category: "books", // <-- Add this property
+  // ...other properties...
+};
