@@ -65,7 +65,7 @@ export default function AddEventModal({ onClose, onAdd }: AddEventModalProps) {
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm text-black"
                 placeholder="Enter event name"
                 required
               />
@@ -79,7 +79,7 @@ export default function AddEventModal({ onClose, onAdd }: AddEventModalProps) {
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm text-black"
                 placeholder="Enter event description"
                 rows={3}
               />
@@ -95,7 +95,7 @@ export default function AddEventModal({ onClose, onAdd }: AddEventModalProps) {
                 value={formData.start_date}
                 onChange={handleInputChange}
                 step="60"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm text-black"
                 required
               />
               <p className="text-xs text-gray-500 mt-1">Select date and time (hours and minutes)</p>
@@ -110,7 +110,7 @@ export default function AddEventModal({ onClose, onAdd }: AddEventModalProps) {
                 value={formData.end_date}
                 onChange={handleInputChange}
                 step="60"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm text-black"
               />
               <p className="text-xs text-gray-500 mt-1">Leave empty for single-day events</p>
             </div>

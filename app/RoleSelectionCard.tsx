@@ -93,7 +93,7 @@ export default function RoleSelectionCard() {
               className="w-full group relative"
             >
               <div className={`
-                bg-gradient-to-r from-red-500 to-red-600 
+                bg-gradient-to-r from-red-500 to-red-600
                 rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 
                 transform transition-all duration-300 
                 ${hoveredCard === 'admin' ? 'scale-105 shadow-xl md:shadow-2xl' : 'shadow-lg hover:shadow-xl'}
@@ -130,7 +130,7 @@ export default function RoleSelectionCard() {
               className="w-full group relative"
             >
               <div className={`
-                bg-gradient-to-r from-gray-800 to-gray-900 
+                bg-gradient-to-r from-gray-800 to-gray-900
                 rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 
                 transform transition-all duration-300 
                 ${hoveredCard === 'student' ? 'scale-105 shadow-xl md:shadow-2xl' : 'shadow-lg hover:shadow-xl'}

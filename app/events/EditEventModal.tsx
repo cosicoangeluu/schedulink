@@ -1,3 +1,7 @@
+'use client';
+
+import { useState } from 'react';
+
 interface EditEventModalProps {
   event: {
     id: number;
@@ -11,15 +15,28 @@ interface EditEventModalProps {
 }
 
 export default function EditEventModal({ event, onClose, onSave }: EditEventModalProps) {
+  const formatDateForInput = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toISOString().slice(0, 16); // YYYY-MM-DDTHH:MM
+  };
+
+  const [name, setName] = useState(event.name);
+  const [description, setDescription] = useState(event.description || '');
+  const [startDate, setStartDate] = useState(formatDateForInput(event.start_date));
+  const [endDate, setEndDate] = useState(formatDateForInput(event.end_date || ''));
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const formData = new FormData(e.target as HTMLFormElement);
-    const endDate = formData.get('end_date') as string;
+    const formatDateForSubmit = (dateString: string) => {
+      if (!dateString) return '';
+      return dateString.replace('T', ' ') + ':00'; // YYYY-MM-DD HH:MM:00
+    };
     const updatedEvent = {
-      name: formData.get('name') as string,
-      description: formData.get('description') as string,
-      start_date: formData.get('start_date') as string,
-      ...(endDate && { end_date: endDate })
+      name,
+      description,
+      start_date: formatDateForSubmit(startDate),
+      ...(endDate && { end_date: formatDateForSubmit(endDate) })
     };
     onSave(event.id, updatedEvent);
   };
@@ -33,18 +50,18 @@ export default function EditEventModal({ event, onClose, onSave }: EditEventModa
             <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
             <input
               type="text"
-              name="name"
-              defaultValue={event.name}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-black"
               required
             />
           </div>
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
             <textarea
-              name="description"
-              defaultValue={event.description || ''}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-black"
               rows={3}
             />
           </div>
@@ -54,10 +71,10 @@ export default function EditEventModal({ event, onClose, onSave }: EditEventModa
             </label>
             <input
               type="datetime-local"
-              name="start_date"
-              defaultValue={event.start_date}
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
               step="60"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-black"
               required
             />
             <p className="text-xs text-gray-500 mt-1">Select date and time (hours and minutes)</p>
@@ -68,10 +85,10 @@ export default function EditEventModal({ event, onClose, onSave }: EditEventModa
             </label>
             <input
               type="datetime-local"
-              name="end_date"
-              defaultValue={event.end_date || ''}
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
               step="60"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-black"
             />
             <p className="text-xs text-gray-500 mt-1">Leave empty for single-day events</p>
           </div>

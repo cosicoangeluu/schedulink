@@ -60,7 +60,7 @@ export default function AdminDashboard() {
 
       <div className="flex-1 pt-16 md:pt-0 p-4 sm:p-8">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Welcome to Admin Dashboard</h1>
           <p className="text-gray-600 mt-1">Welcome back! Here's what's happening with your events.</p>
         </div>
 
@@ -116,8 +116,8 @@ export default function AdminDashboard() {
                   <i className="ri-bar-chart-line text-xl text-green-600"></i>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Generate Reports</p>
-                  <p className="text-lg font-bold text-gray-900">Create New</p>
+                  <p className="text-sm font-medium text-gray-600">Reports</p>
+                  <p className="text-lg font-bold text-gray-900">New</p>
                 </div>
               </div>
               <button
@@ -136,7 +136,7 @@ export default function AdminDashboard() {
                 <i className="ri-user-line text-xl text-purple-600"></i>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Registrations</p>
+                <p className="text-sm font-medium text-gray-600">Registrations</p>
                 <p className="text-2xl font-bold text-gray-900">{kpiData.totalRegistrations}</p>
               </div>
             </div>

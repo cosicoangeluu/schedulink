@@ -4,6 +4,7 @@ import { Geist, Geist_Mono, Pacifico } from "next/font/google";
 import ClientLayout from "../components/ClientLayout";
 import { RoleProvider } from "../components/RoleContext";
 import { NotificationsProvider } from "../context/NotificationsContext";
+import { ThemeProvider } from "../context/ThemeContext";
 import "./globals.css";
 
 const pacifico = Pacifico({
@@ -23,6 +24,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -33,13 +35,15 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${pacifico.variable} antialiased`}
       >
-        <RoleProvider>
-          <NotificationsProvider>
-            <ClientLayout>
-              {children}
-            </ClientLayout>
-          </NotificationsProvider>
-        </RoleProvider>
+        <ThemeProvider>
+          <RoleProvider>
+            <NotificationsProvider>
+              <ClientLayout>
+                {children}
+              </ClientLayout>
+            </NotificationsProvider>
+          </RoleProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

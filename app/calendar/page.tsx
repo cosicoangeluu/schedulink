@@ -5,6 +5,7 @@ import { useRole } from '../../components/RoleContext';
 import Sidebar from '../../components/Sidebar';
 import { useNotifications } from '../../context/NotificationsContext';
 import AddEventModal from '../events/AddEventModal';
+import EventDetailsModal from '../events/EventDetailsModal';
 
 interface Event {
   id: number;
@@ -27,6 +28,8 @@ function getFirstDayOfMonth(year: number, month: number) {
 export default function CalendarPage() {
   const [eventList, setEventList] = useState<Event[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const year = currentDate.getFullYear();
@@ -200,14 +203,25 @@ export default function CalendarPage() {
                 <div className="flex flex-col space-y-1 overflow-y-auto flex-1">
                   {events.length > 0 ? (
                     events.map((event: Event) => (
-                      <div 
-                        key={event.id} 
-                        className="bg-green-100 text-green-800 rounded px-2 py-1 text-xs truncate hover:bg-green-200 transition-colors cursor-pointer" 
-                        title={`${event.name}\n${event.description || 'No description'}`}
-                      >
-                        <i className="ri-checkbox-circle-fill mr-1"></i>
-                        {event.name}
-                      </div>
+                      role === 'admin' ? (
+                        <div
+                          key={event.id}
+                          className="bg-green-100 text-green-800 rounded px-2 py-1 text-xs truncate hover:bg-green-200 transition-colors cursor-pointer"
+                          onClick={() => { setSelectedEvent(event); setShowDetailsModal(true); }}
+                        >
+                          <i className="ri-checkbox-circle-fill mr-1"></i>
+                          {event.name}
+                        </div>
+                      ) : (
+                        <div
+                          key={event.id}
+                          className="bg-green-100 text-green-800 rounded px-2 py-1 text-xs truncate"
+                          title={`${event.name}\n${event.description || 'No description'}`}
+                        >
+                          <i className="ri-checkbox-circle-fill mr-1"></i>
+                          {event.name}
+                        </div>
+                      )
                     ))
                   ) : (
                     <div className="text-xs text-gray-400 italic">No events</div>
@@ -223,6 +237,13 @@ export default function CalendarPage() {
         <AddEventModal
           onClose={() => setShowAddModal(false)}
           onAdd={handleAddEvent}
+        />
+      )}
+
+      {showDetailsModal && selectedEvent && (
+        <EventDetailsModal
+          event={selectedEvent}
+          onClose={() => { setShowDetailsModal(false); setSelectedEvent(null); }}
         />
       )}
     </div>

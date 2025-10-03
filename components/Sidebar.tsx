@@ -40,15 +40,15 @@ export default function Sidebar({ isMobileOpen = false, onClose }: { isMobileOpe
           <nav className="space-y-2">
             {menuItems.map((item, index) => (
               item.action === 'logout' ? (
-                <button
-                  key={index}
-                  onClick={() => {
-                    clearRole();
-                    router.push('/');
-                    onClose && onClose();
-                  }}
-                  className="flex items-center space-x-3 p-3 rounded-lg transition-colors cursor-pointer whitespace-nowrap w-full text-left hover:bg-red-700"
-                >
+              <button
+                key={index}
+                onClick={() => {
+                  clearRole();
+                  router.push('/');
+                  onClose && onClose();
+                }}
+                className="flex items-center space-x-3 p-3 rounded-lg transition-colors cursor-pointer whitespace-nowrap w-full text-left hover:bg-red-700"
+              >
                   <div className="w-5 h-5 flex items-center justify-center">
                     <i className={item.icon}></i>
                   </div>

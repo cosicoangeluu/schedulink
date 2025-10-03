@@ -23,7 +23,7 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-red-600 via-red-700 to-red-800">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-red-600 via-red-700 to-red-800 flex items-center justify-center">
       {/* Decorative Background Elements */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full -translate-x-1/2 -translate-y-1/2"></div>
@@ -32,7 +32,7 @@ export default function AdminLogin() {
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="relative w-full h-full flex items-center justify-center p-4 lg:p-8">
+      <div className="relative w-full p-4 lg:p-8">
         <div className="w-full max-w-md lg:max-w-lg">
           {/* Glassmorphism Card */}
           <div className="bg-white bg-opacity-10 backdrop-blur-lg rounded-3xl shadow-2xl border border-white border-opacity-20 p-6 sm:p-8 lg:p-12">

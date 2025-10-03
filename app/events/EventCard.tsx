@@ -108,7 +108,7 @@ export default function EventCard({ event, onDelete, onEdit }: EventCardProps) {
       <div className="flex space-x-2">
         <button
           onClick={() => setShowEditModal(true)}
-          className="flex-1 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium cursor-pointer whitespace-nowrap"
+          className="flex-1 bg-gray-100 text-black px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium cursor-pointer whitespace-nowrap"
         >
           Edit
         </button>
