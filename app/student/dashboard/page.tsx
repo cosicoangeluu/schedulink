@@ -207,7 +207,7 @@ export default function StudentDashboard() {
   const declinedCount = myEvents.filter(e => e.status === 'declined').length;
 
   return (
-    <div className="flex min-h-screen bg-gray-50
+    <div className="flex min-h-screen bg-gray-50">
       <Sidebar isMobileOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* Mobile menu button */}
@@ -223,7 +223,7 @@ export default function StudentDashboard() {
 
       <div className="flex-1 pt-16 md:pt-0 p-4 sm:p-8 md:p-8">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 / Department Head Dashboard</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Student Dashboard</h1>
           <p className="text-gray-600 mt-1">Manage your events and submit narrative reports</p>
         </div>
 
@@ -234,7 +234,7 @@ export default function StudentDashboard() {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className="w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center">
-                  <i className="ri-add-circle-line text-xl text-red-600
+                  <i className="ri-add-circle-line text-xl text-red-600"></i>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-600 Event</p>
