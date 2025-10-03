@@ -1,4 +1,4 @@
-'use client';
+  'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -22,7 +22,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       {children}
       <button
         onClick={toggleTheme}
-        className="fixed bottom-4 right-4 z-50 p-3 bg-gray-200 text-gray-800 rounded-full shadow-lg hover:bg-gray-300 transition-colors"
+        className="fixed bottom-4 right-4 z-50 p-3 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full shadow-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
         aria-label="Toggle theme"
       >
         {theme === 'light' ? (

@@ -32,10 +32,10 @@ export default function AdminLogin() {
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="relative w-full p-4 lg:p-8">
-        <div className="w-full max-w-md lg:max-w-lg">
+      <div className="relative max-w-md lg:max-w-lg mx-auto p-4 lg:p-8">
+        <div className="w-full">
           {/* Glassmorphism Card */}
-          <div className="bg-white bg-opacity-10 backdrop-blur-lg rounded-3xl shadow-2xl border border-white border-opacity-20 p-6 sm:p-8 lg:p-12">
+          <div className="mt-20 bg-white bg-opacity-10 backdrop-blur-lg rounded-3xl shadow-2xl border border-white border-opacity-20 p-6 sm:p-8 lg:p-12">
             <div className="text-center mb-6 sm:mb-8">
               <h2 className="text-2xl sm:text-4xl font-bold text-white mb-2">Admin Login</h2>
               <p className="text-red-100 text-base sm:text-lg">Enter your credentials to access the dashboard</p>

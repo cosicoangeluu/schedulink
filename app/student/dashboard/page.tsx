@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRole } from '../../../components/RoleContext';
 import Sidebar from '../../../components/Sidebar';
 import AddEventModal from '../../events/AddEventModal';
+import EventDetailsModal from '../../events/EventDetailsModal';
 
 interface Event {
   id: number;
@@ -207,327 +208,206 @@ export default function StudentDashboard() {
   const declinedCount = myEvents.filter(e => e.status === 'declined').length;
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar isMobileOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    <>
+      <div className="flex min-h-screen bg-gray-50">
+        <Sidebar isMobileOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      {/* Mobile menu button */}
-      <div className="md:hidden fixed top-4 left-4 z-50">
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="bg-red-600 text-white p-2 rounded-lg shadow-lg hover:bg-red-700 transition-colors"
-          aria-label="Toggle menu"
-        >
-          <i className="ri-menu-line text-xl"></i>
-        </button>
-      </div>
-
-      <div className="flex-1 pt-16 md:pt-0 p-4 sm:p-8 md:p-8">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Student Dashboard</h1>
-          <p className="text-gray-600 mt-1">Manage your events and submit narrative reports</p>
+        {/* Mobile menu button */}
+        <div className="md:hidden fixed top-4 left-4 z-50">
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="bg-red-600 text-white p-2 rounded-lg shadow-lg hover:bg-red-700 transition-colors"
+            aria-label="Toggle menu"
+          >
+            <i className="ri-menu-line text-xl"></i>
+          </button>
         </div>
 
-        {/* Quick Access Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {/* Add Event Card */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center">
-                  <i className="ri-add-circle-line text-xl text-red-600"></i>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-600 Event</p>
-                  <p className="text-lg font-bold text-gray-900 New</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
-              >
-                Add
-              </button>
-            </div>
+        <div className="flex-1 pt-16 md:pt-0 p-4 sm:p-8 md:p-8">
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-gray-900">Student Dashboard</h1>
+            <p className="text-gray-600 mt-1">Manage your events and submit narrative reports</p>
           </div>
 
-          {/* Pending Events Stat */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-yellow-50 rounded-lg flex items-center justify-center">
-                <i className="ri-time-line text-xl text-yellow-600
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 Events</p>
-                <p className="text-2xl font-bold text-gray-900
-              </div>
-            </div>
-          </div>
-
-          {/* Upload Report Action */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
-                  <i className="ri-upload-2-line text-xl text-blue-600
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-600 Report</p>
-                  <p className="text-lg font-bold text-gray-900 New</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setActiveTab('reports')}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
-              >
-                Upload
-              </button>
-            </div>
-          </div>
-
-          {/* My Reports Stat */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
-                <i className="ri-file-text-line text-xl text-green-600
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 Reports</p>
-                <p className="text-2xl font-bold text-gray-900
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Tabbed Interface */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-100 mb-6">
-          {/* Compact Tabs */}
-          <div className="border-b border-gray-200
-            <div className="flex space-x-1 p-1">
-              <button
-                onClick={() => setActiveTab('events')}
-                className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition-colors ${
-                  activeTab === 'events'
-                    ? 'bg-red-50 text-red-700 border border-red-200
-                    : 'text-gray-600 hover:bg-gray-50
-                }`}
-              >
-                <div className="flex items-center justify-center space-x-1">
-                  <i className="ri-calendar-event-line text-sm"></i>
-                  <span>Events</span>
-                </div>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('reports')}
-                className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition-colors ${
-                  activeTab === 'reports'
-                    ? 'bg-red-50 text-red-700 border border-red-200
-                    : 'text-gray-600 hover:bg-gray-50
-                }`}
-              >
-                <div className="flex items-center justify-center space-x-1">
-                  <i className="ri-file-text-line text-sm"></i>
-                  <span>Reports</span>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          {/* Content Area */}
-          <div className="p-6">
-            {/* Events Tab */}
-            {activeTab === 'events' && (
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-semibold text-gray-900 Events</h2>
-                  <button
-                    onClick={() => setShowAddModal(true)}
-                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium cursor-pointer whitespace-nowrap flex items-center"
-                  >
-                    <i className="ri-add-line mr-2"></i>
-                    Add Event
-                  </button>
-                </div>
-
-                {loadingEvents ? (
-                  <div className="text-center py-12">
-                    <div className="animate-spin w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full mx-auto"></div>
-                    <p className="text-gray-600 mt-4">Loading events...</p>
+          {/* Quick Access Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {/* Add Event Card */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center">
+                    <i className="ri-add-circle-line text-xl text-red-600"></i>
                   </div>
-                ) : myEvents.length === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="w-16 h-16 flex items-center justify-center mx-auto mb-4 text-gray-400
-                      <i className="ri-calendar-event-line text-4xl"></i>
-                    </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No events yet</h3>
-                    <p className="text-gray-600 mb-4">Create your first event to get started</p>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Event</p>
+                    <p className="text-lg font-bold text-gray-900">New</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+
+            {/* Pending Events Stat */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+              <div className="flex items-center">
+                <div className="w-12 h-12 bg-yellow-50 rounded-lg flex items-center justify-center">
+                  <i className="ri-time-line text-xl text-yellow-600"></i>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Events</p>
+                  <p className="text-2xl font-bold text-gray-900">{pendingCount}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Upload Report Action */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
+                    <i className="ri-upload-2-line text-xl text-blue-600"></i>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Report</p>
+                    <p className="text-lg font-bold text-gray-900">New</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setActiveTab('reports')}
+                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                >
+                  Upload
+                </button>
+              </div>
+            </div>
+
+            {/* My Reports Stat */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+              <div className="flex items-center">
+                <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
+                  <i className="ri-file-text-line text-xl text-green-600"></i>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Reports</p>
+                  <p className="text-2xl font-bold text-gray-900">{reports.length}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Tabbed Interface */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-100 mb-6">
+            {/* Compact Tabs */}
+            <div className="border-b border-gray-200">
+              <div className="flex space-x-1 p-1">
+                <button
+                  onClick={() => setActiveTab('events')}
+                  className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition-colors ${
+                    activeTab === 'events'
+                      ? 'bg-red-50 text-red-700 border border-red-200'
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center justify-center space-x-1">
+                    <i className="ri-calendar-event-line text-sm"></i>
+                    <span>Events</span>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('reports')}
+                  className={`flex-1 px-3 py-2 text-xs font-medium rounded-md transition-colors ${
+                    activeTab === 'reports'
+                      ? 'bg-red-50 text-red-700 border border-red-200'
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center justify-center space-x-1">
+                    <i className="ri-file-text-line text-sm"></i>
+                    <span>Reports</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Content Area */}
+            <div className="p-6">
+              {/* Events Tab */}
+              {activeTab === 'events' && (
+                <div>
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-lg font-semibold text-gray-900">Events</h2>
                     <button
                       onClick={() => setShowAddModal(true)}
-                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium cursor-pointer"
+                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium cursor-pointer whitespace-nowrap flex items-center"
                     >
+                      <i className="ri-add-line mr-2"></i>
                       Add Event
                     </button>
                   </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse border border-gray-200 bg-white rounded-lg overflow-hidden">
-                      <thead className="bg-gray-50
-                        <tr>
-                          <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700
-                          <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700
-                          <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700
-                          <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700
-                          <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {myEvents.map(event => (
-                          <tr key={event.id} className="hover:bg-gray-50 transition-colors">
-                            <td className="border border-gray-200 px-4 py-3">
-                              <div className="font-medium text-gray-900
-                              {event.description && (
-                                <p className="text-sm text-gray-600 mt-1 line-clamp-1">{event.description}</p>
-                              )}
-                            </td>
-                            <td className="border border-gray-200 px-4 py-3 text-sm text-gray-600
-                            <td className="border border-gray-200 px-4 py-3">
-                              <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(event.status)}`}>
-                                {event.status}
-                              </span>
-                            </td>
-                            <td className="border border-gray-200 px-4 py-3 text-sm font-semibold text-blue-600 || 0}</td>
-                            <td className="border border-gray-200 px-4 py-3">
-                              <button 
-                                onClick={() => {
-                                  setSelectedEvent(event);
-                                  setShowViewModal(true);
-                                }}
-                                className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700 transition-colors"
-                              >
-                                View
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            )}
 
-            {/* Reports Tab */}
-            {activeTab === 'reports' && (
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900 mb-6">Submit Narrative Reports</h2>
-
-                {/* Upload Form Card */}
-                <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 mb-6">
-                  <h3 className="text-md font-semibold text-gray-900 mb-4">Upload New Report</h3>
-                  <form onSubmit={handleFileUpload} className="space-y-4">
-                    <div>
-                      <label htmlFor="event-select" className="block text-sm font-medium text-gray-700 mb-2">
-                        Select Approved Event <span className="text-red-600
-                      </label>
-                      <select
-                        id="event-select"
-                        value={selectedEventId}
-                        onChange={(e) => setSelectedEventId(Number(e.target.value))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm bg-white
-                        required
-                      >
-                        <option value={0}>Select an event...</option>
-                        {approvedEvents.map(event => (
-                          <option key={event.id} value={event.id}>
-                            {event.name} - {formatDate(event.start_date)}
-                          </option>
-                        ))}
-                      </select>
-                      {approvedEvents.length === 0 && (
-                        <p className="text-xs text-gray-500 mt-1">No approved events available. Events must be approved before you can submit reports.</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label htmlFor="file-input" className="block text-sm font-medium text-gray-700 mb-2">
-                        Select PDF File <span className="text-red-600
-                      </label>
-                      <input
-                        id="file-input"
-                        type="file"
-                        accept=".pdf"
-                        onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm bg-white
-                        required
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Only PDF files are accepted. Maximum file size: 10MB</p>
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={uploading || approvedEvents.length === 0 || selectedEventId === 0}
-                      className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium cursor-pointer flex items-center"
-                    >
-                      {uploading ? (
-                        <>
-                          <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
-                          Uploading...
-                        </>
-                      ) : (
-                        <>
-                          <i className="ri-upload-2-line mr-2"></i>
-                          Upload Report
-                        </>
-                      )}
-                    </button>
-                  </form>
-                </div>
-
-                {/* Uploaded Reports Table */}
-                <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-                  <div className="p-6 border-b border-gray-200
-                    <h3 className="text-md font-semibold text-gray-900 Uploaded Reports</h3>
-                  </div>
-                  {loadingReports ? (
+                  {loadingEvents ? (
                     <div className="text-center py-12">
                       <div className="animate-spin w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full mx-auto"></div>
-                      <p className="text-gray-600 mt-4">Loading reports...</p>
+                      <p className="text-gray-600 mt-4">Loading events...</p>
                     </div>
-                  ) : reports.length === 0 ? (
+                  ) : myEvents.length === 0 ? (
                     <div className="text-center py-12">
-                      <div className="w-16 h-16 flex items-center justify-center mx-auto mb-4 text-gray-400
-                        <i className="ri-file-text-line text-4xl"></i>
+                      <div className="w-16 h-16 flex items-center justify-center mx-auto mb-4 text-gray-400">
+                        <i className="ri-calendar-event-line text-4xl"></i>
                       </div>
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No reports uploaded yet</h3>
-                      <p className="text-gray-600 mb-4">Upload your first narrative report to get started</p>
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">No events yet</h3>
+                      <p className="text-gray-600 mb-4">Create your first event to get started</p>
+                      <button
+                        onClick={() => setShowAddModal(true)}
+                        className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium cursor-pointer"
+                      >
+                        Add Event
+                      </button>
                     </div>
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="w-full border-collapse border border-gray-200 bg-white rounded-lg overflow-hidden">
-                        <thead className="bg-gray-50
+                        <thead className="bg-gray-50">
                           <tr>
-                            <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700 Name</th>
-                            <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700 At</th>
-                            <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700
+                            <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
+                            <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">Description</th>
+                            <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
+                            <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">Attendees</th>
+                            <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {reports.map(report => (
-                            <tr key={report.id} className="hover:bg-gray-50 transition-colors">
+                          {myEvents.map(event => (
+                            <tr key={event.id} className="hover:bg-gray-50 transition-colors">
                               <td className="border border-gray-200 px-4 py-3">
-                                <div className="font-medium text-gray-900
-                                <p className="text-sm text-gray-600 mt-1">Attendees: {report.attendees}</p>
+                                <div className="font-medium text-gray-900">{event.name}</div>
+                                {event.description && (
+                                  <p className="text-sm text-gray-600 mt-1 line-clamp-1">{event.description}</p>
+                                )}
                               </td>
-                              <td className="border border-gray-200 px-4 py-3 text-sm text-gray-600
+                              <td className="border border-gray-200 px-4 py-3 text-sm text-gray-600">{formatDate(event.start_date)}</td>
                               <td className="border border-gray-200 px-4 py-3">
-                                <a
-                                  href={`http://localhost:5000/uploads/${report.filePath.split('/').pop()}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
+                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(event.status)}`}>
+                                  {event.status}
+                                </span>
+                              </td>
+                              <td className="border border-gray-200 px-4 py-3 text-sm font-semibold text-blue-600">{event.attendees || 0}</td>
+                              <td className="border border-gray-200 px-4 py-3">
+                                <button
+                                  onClick={() => {
+                                    setSelectedEvent(event);
+                                    setShowViewModal(true);
+                                  }}
                                   className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700 transition-colors"
                                 >
                                   View
-                                </a>
+                                </button>
                               </td>
                             </tr>
                           ))}
@@ -536,15 +416,138 @@ export default function StudentDashboard() {
                     </div>
                   )}
                 </div>
-              </div>
-            )}
+              )}
+
+              {/* Reports Tab */}
+              {activeTab === 'reports' && (
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-6">Submit Narrative Reports</h2>
+
+                  {/* Upload Form Card */}
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 mb-6">
+                    <h3 className="text-md font-semibold text-gray-900 mb-4">Upload New Report</h3>
+                    <form onSubmit={handleFileUpload} className="space-y-4">
+                      <div>
+                        <label htmlFor="event-select" className="block text-sm font-medium text-gray-700 mb-2">
+                          Select Approved Event <span className="text-red-600">*</span>
+                        </label>
+                        <select
+                          id="event-select"
+                          value={selectedEventId}
+                          onChange={(e) => setSelectedEventId(Number(e.target.value))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm bg-white"
+                          required
+                        >
+                          <option value={0}>Select an event...</option>
+                          {approvedEvents.map(event => (
+                            <option key={event.id} value={event.id}>
+                              {event.name} - {formatDate(event.start_date)}
+                            </option>
+                          ))}
+                        </select>
+                        {approvedEvents.length === 0 && (
+                          <p className="text-xs text-gray-500 mt-1">No approved events available. Events must be approved before you can submit reports.</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label htmlFor="file-input" className="block text-sm font-medium text-gray-700 mb-2">
+                          Select PDF File <span className="text-red-600">*</span>
+                        </label>
+                        <input
+                          id="file-input"
+                          type="file"
+                          accept=".pdf"
+                          onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm bg-white"
+                          required
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Only PDF files are accepted. Maximum file size: 10MB</p>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={uploading || approvedEvents.length === 0 || selectedEventId === 0}
+                        className="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium cursor-pointer flex items-center"
+                      >
+                        {uploading ? (
+                          <>
+                            <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <i className="ri-upload-2-line mr-2"></i>
+                            Upload Report
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* Uploaded Reports Table */}
+                  <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="p-6 border-b border-gray-200">
+                      <h3 className="text-md font-semibold text-gray-900">Uploaded Reports</h3>
+                    </div>
+                    {loadingReports ? (
+                      <div className="text-center py-12">
+                        <div className="animate-spin w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full mx-auto"></div>
+                        <p className="text-gray-600 mt-4">Loading reports...</p>
+                      </div>
+                    ) : reports.length === 0 ? (
+                      <div className="text-center py-12">
+                        <div className="w-16 h-16 flex items-center justify-center mx-auto mb-4 text-gray-400">
+                          <i className="ri-file-text-line text-4xl"></i>
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No reports uploaded yet</h3>
+                        <p className="text-gray-600 mb-4">Upload your first narrative report to get started</p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full border-collapse border border-gray-200 bg-white rounded-lg overflow-hidden">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">Event Name</th>
+                              <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">Uploaded At</th>
+                              <th className="border border-gray-200 px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {reports.map(report => (
+                              <tr key={report.id} className="hover:bg-gray-50 transition-colors">
+                                <td className="border border-gray-200 px-4 py-3">
+                                  <div className="font-medium text-gray-900">{report.eventName}</div>
+                                  <p className="text-sm text-gray-600 mt-1">Attendees: {report.attendees}</p>
+                                </td>
+                                <td className="border border-gray-200 px-4 py-3 text-sm text-gray-600">{formatDate(report.uploadedAt)}</td>
+                                <td className="border border-gray-200 px-4 py-3">
+                                  <a
+                                    href={`http://localhost:5000/uploads/${report.filePath.split('/').pop()}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700 transition-colors"
+                                  >
+                                    View
+                                  </a>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
+
+        {showAddModal && <AddEventModal onClose={() => setShowAddModal(false)} onAdd={handleAddEvent} />}
+
+        {selectedEvent && <EventDetailsModal event={selectedEvent} onClose={() => setShowViewModal(false)} />}
       </div>
-    </div>
+    </>
   );
 }
-
-<AddEventModal show={showAddModal} onClose={() => setShowAddModal(false)} onAdd={handleAddEvent} />
-
-{selectedEvent && <EventDetailsModal show={showViewModal} onClose={() => setShowViewModal(false)} event={selectedEvent} />}
