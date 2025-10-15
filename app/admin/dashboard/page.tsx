@@ -1,0 +1,247 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import ChartSection from '../../../components/ChartSection';
+import RecentActivity from '../../../components/RecentActivity';
+import Sidebar from '../../../components/Sidebar';
+import UpcomingEvents from '../../../components/UpcomingEvents';
+import { useNotifications } from '../../../context/NotificationsContext';
+
+export default function AdminDashboard() {
+  const router = useRouter();
+  const { pendingCount } = useNotifications();
+  const [kpiData, setKpiData] = useState({
+    totalEvents: 0,
+    pendingEvents: 0
+  });
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+  const [upcomingTasks, setUpcomingTasks] = useState<any[]>([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  useEffect(() => {
+    // Fetch total approved events
+    fetch('https://angelu-backend.onrender.com/api/events')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          const approvedEvents = data.filter(event => event.status === 'approved').length;
+          const pendingEvents = data.filter(event => event.status === 'pending').length;
+          setKpiData(prev => ({ ...prev, totalEvents: approvedEvents, pendingEvents }));
+        }
+      })
+      .catch(err => console.error('Failed to fetch events:', err));
+
+    // Check for upcoming tasks due within 10 minutes
+    fetch('https://angelu-backend.onrender.com/api/tasks')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          const now = new Date();
+          const tenMinutesFromNow = new Date(now.getTime() + 10 * 60 * 1000);
+          const upcoming = data.filter((task: any) => {
+            if (!task.due_date || task.completed) return false;
+            const dueDate = new Date(task.due_date);
+            return dueDate >= now && dueDate <= tenMinutesFromNow;
+          });
+          if (upcoming.length > 0) {
+            setUpcomingTasks(upcoming);
+            setShowPopup(true);
+          }
+        }
+      })
+      .catch(err => console.error('Failed to fetch tasks for notifications:', err));
+  }, []);
+
+  return (
+    <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-gradient-to-r from-red-400/20 to-pink-400/20 rounded-full blur-3xl animate-blob"></div>
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-full blur-3xl animate-blob animation-delay-2000"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-gradient-to-r from-green-400/15 to-teal-400/15 rounded-full blur-3xl animate-blob animation-delay-4000"></div>
+      </div>
+
+      <Sidebar isMobileOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+      {/* Mobile menu button */}
+      <div className="md:hidden fixed top-4 left-4 z-50">
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="bg-gradient-to-r from-red-500 to-red-600 text-white p-3 rounded-xl shadow-2xl hover:shadow-red-500/25 hover:scale-105 transition-all duration-300 backdrop-blur-sm"
+          aria-label="Toggle menu"
+        >
+          <i className="ri-menu-line text-xl"></i>
+        </button>
+      </div>
+
+      <div className="flex-1 pt-16 md:pt-0 p-4 sm:p-8 relative z-10">
+        {/* Enhanced Header Section */}
+        <div className="mb-10">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-900 via-red-800 to-gray-900 bg-clip-text text-transparent mb-2">
+                Admin Dashboard
+              </h1>
+              <p className="text-gray-600 text-lg">Welcome back! Here's what's happening with your events today.</p>
+            </div>
+            <div className="hidden md:flex items-center space-x-4">
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg border border-white/20">
+                <div className="flex items-center space-x-2">
+                  <i className="ri-calendar-line text-red-500"></i>
+                  <span className="text-sm font-medium text-gray-700">
+                    {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Stats Overview Bar */}
+          <div className="bg-white/60 backdrop-blur-xl rounded-2xl p-6 shadow-xl border border-white/20">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-900 mb-1">{kpiData.totalEvents}</div>
+                <div className="text-sm text-gray-600 font-medium">Total Events</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-yellow-600 mb-1">{kpiData.pendingEvents}</div>
+                <div className="text-sm text-gray-600 font-medium">Pending Approval</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600 mb-1">{pendingCount || 0}</div>
+                <div className="text-sm text-gray-600 font-medium">Active Notifications</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Enhanced Quick Access Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+          {/* View Pending Events */}
+          <div className="group bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-yellow-50/50 to-orange-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-14 h-14 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <i className="ri-time-line text-2xl text-white"></i>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-gray-900">{kpiData.pendingEvents}</p>
+                  <p className="text-xs text-gray-500 font-medium">Pending</p>
+                </div>
+              </div>
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">Pending Events</h3>
+                <p className="text-sm text-gray-600">Events awaiting approval</p>
+              </div>
+              <button
+                onClick={() => router.push('/notifications')}
+                className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 text-white py-3 px-4 rounded-xl hover:from-yellow-600 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-yellow-500/25 font-semibold text-sm"
+              >
+                <span className="flex items-center justify-center">
+                  View Events
+                  <i className="ri-arrow-right-line ml-2 group-hover:translate-x-1 transition-transform duration-300"></i>
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* Manage Notifications */}
+          <div className="group bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <i className="ri-notification-3-line text-2xl text-white"></i>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-gray-900">{pendingCount || 0}</p>
+                  <p className="text-xs text-gray-500 font-medium">Active</p>
+                </div>
+              </div>
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">Notifications</h3>
+                <p className="text-sm text-gray-600">Manage system alerts</p>
+              </div>
+              <button
+                onClick={() => router.push('/notifications')}
+                className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white py-3 px-4 rounded-xl hover:from-blue-600 hover:to-indigo-600 transition-all duration-300 shadow-lg hover:shadow-blue-500/25 font-semibold text-sm"
+              >
+                <span className="flex items-center justify-center">
+                  Manage
+                  <i className="ri-arrow-right-line ml-2 group-hover:translate-x-1 transition-transform duration-300"></i>
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* Generate Reports */}
+          <div className="group bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 to-emerald-50/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <i className="ri-bar-chart-line text-2xl text-white"></i>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-gray-900">New</p>
+                  <p className="text-xs text-gray-500 font-medium">Available</p>
+                </div>
+              </div>
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">Reports</h3>
+                <p className="text-sm text-gray-600">Generate analytics</p>
+              </div>
+              <button
+                onClick={() => router.push('/reports')}
+                className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 px-4 rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-green-500/25 font-semibold text-sm"
+              >
+                <span className="flex items-center justify-center">
+                  Generate
+                  <i className="ri-arrow-right-line ml-2 group-hover:translate-x-1 transition-transform duration-300"></i>
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <ChartSection />
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+          <div className="xl:col-span-2 space-y-8">
+            <UpcomingEvents />
+          </div>
+          <div className="space-y-8">
+            <RecentActivity />
+          </div>
+        </div>
+      </div>
+
+      {showPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Upcoming Tasks Reminder</h3>
+            <p className="text-sm text-black-600 mb-4">You have tasks due within the next 10 minutes:</p>
+            <ul className="space-y-2 mb-4">
+              {upcomingTasks.map((task) => (
+                <li key={task.id} className="text-sm bg-gray-50 p-2 rounded">
+                  <strong>{task.title}</strong>
+                  <br />
+                  Due: {new Date(task.due_date).toLocaleString()}
+                </li>
+              ))}
+            </ul>
+            <button
+              onClick={() => setShowPopup(false)}
+              className="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

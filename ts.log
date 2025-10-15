@@ -1,0 +1,1 @@
+app/Dashboard.tsx(6,26): error TS2307: Cannot find module '../components/QuickActions' or its corresponding type declarations.

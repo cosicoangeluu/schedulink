@@ -1,0 +1,23 @@
+
+> next-app@0.1.0 build
+> next build
+
+   ▲ Next.js 15.3.2
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 3.0s
+   Linting and checking validity of types ...
+ ⨯ ESLint: Failed to load config "next/core-web-vitals" to extend from. Referenced from: 
+Failed to compile.
+
+./app/Dashboard.tsx:6:26
+Type error: Cannot find module '../components/QuickActions' or its corresponding type declarations.
+
+[0m [90m 4 |[39m [36mimport[39m [33mChartSection[39m [36mfrom[39m [32m'../components/ChartSection'[39m[33m;[39m[0m
+[0m [90m 5 |[39m [36mimport[39m [33mKPICard[39m [36mfrom[39m [32m'../components/KPICard'[39m[33m;[39m[0m
+[0m[31m[1m>[22m[39m[90m 6 |[39m [36mimport[39m [33mQuickActions[39m [36mfrom[39m [32m'../components/QuickActions'[39m[33m;[39m[0m
+[0m [90m   |[39m                          [31m[1m^[22m[39m[0m
+[0m [90m 7 |[39m [36mimport[39m [33mRecentActivity[39m [36mfrom[39m [32m'../components/RecentActivity'[39m[33m;[39m[0m
+[0m [90m 8 |[39m [36mimport[39m [33mSidebar[39m [36mfrom[39m [32m'../components/Sidebar'[39m[33m;[39m[0m
+[0m [90m 9 |[39m [36mimport[39m [33mUpcomingEvents[39m [36mfrom[39m [32m'../components/UpcomingEvents'[39m[33m;[39m[0m
+Next.js build worker exited with code: 1 and signal: null
