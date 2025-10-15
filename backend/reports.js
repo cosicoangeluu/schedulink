@@ -1,6 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const { pool } = require('./database');
 
 const router = express.Router();
@@ -55,11 +56,11 @@ router.post('/upload', upload.single('report'), async (req, res) => {
 // GET /api/reports - Get all reports
 router.get('/', async (req, res) => {
   try {
-    // Query all reports with event names
+    // Query all reports with event names, including reports for deleted events
     const [reports] = await pool.execute(`
-      SELECT r.*, e.name as eventName
+      SELECT r.*, COALESCE(e.name, 'Event Deleted') as eventName
       FROM reports r
-      JOIN events e ON r.eventId = e.id
+      LEFT JOIN events e ON r.eventId = e.id
       ORDER BY r.uploadedAt DESC
     `);
 
@@ -67,6 +68,47 @@ router.get('/', async (req, res) => {
   } catch (error) {
     console.error('Error fetching reports:', error);
     res.status(500).json({ error: 'Failed to fetch reports' });
+  }
+});
+
+// GET /api/reports/files - Get all uploaded files with event info
+router.get('/files', async (req, res) => {
+  try {
+    // Query all reports with event names and file details, including reports for deleted events
+    const [reports] = await pool.execute(`
+      SELECT r.id, r.filePath, r.uploadedBy, r.uploadedAt, COALESCE(e.name, 'Event Deleted') as eventName, COALESCE(e.id, r.eventId) as eventId
+      FROM reports r
+      LEFT JOIN events e ON r.eventId = e.id
+      ORDER BY r.uploadedAt DESC
+    `);
+
+    // Add file size and check if file exists
+    const filesWithDetails = reports.map(report => {
+      const filePath = path.join(__dirname, report.filePath);
+      let fileSize = 0;
+      let exists = false;
+      try {
+        if (fs.existsSync(filePath)) {
+          const stats = fs.statSync(filePath);
+          fileSize = stats.size;
+          exists = true;
+        }
+      } catch (error) {
+        console.error('Error checking file:', error);
+      }
+
+      return {
+        ...report,
+        fileName: path.basename(report.filePath),
+        fileSize,
+        exists
+      };
+    });
+
+    res.json(filesWithDetails);
+  } catch (error) {
+    console.error('Error fetching files:', error);
+    res.status(500).json({ error: 'Failed to fetch files' });
   }
 });
 
