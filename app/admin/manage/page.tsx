@@ -35,7 +35,7 @@ export default function AdminManagement() {
 
   const fetchAdmins = async () => {
     try {
-      const response = await fetch('https://angelu-backend.onrender.com/api/auth/admins');
+      const response = await fetch('https://schedulink-backend.onrender.com/api/auth/admins');
       if (response.ok) {
         const data = await response.json();
         setAdmins(data);
@@ -53,7 +53,7 @@ export default function AdminManagement() {
     setSuccess('');
 
     try {
-      const response = await fetch('https://angelu-backend.onrender.com/api/auth/admins', {
+      const response = await fetch('https://schedulink-backend.onrender.com/api/auth/admins', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -85,7 +85,7 @@ export default function AdminManagement() {
     if (!selectedAdmin) return;
 
     try {
-      const response = await fetch(`https://angelu-backend.onrender.com/api/auth/admins/${selectedAdmin.id}`, {
+      const response = await fetch(`https://schedulink-backend.onrender.com/api/auth/admins/${selectedAdmin.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -112,7 +112,7 @@ export default function AdminManagement() {
     if (!confirm('Are you sure you want to delete this admin?')) return;
 
     try {
-      const response = await fetch(`https://angelu-backend.onrender.com/api/auth/admins/${adminId}`, {
+      const response = await fetch(`https://schedulink-backend.onrender.com/api/auth/admins/${adminId}`, {
         method: 'DELETE',
       });
 

@@ -55,7 +55,7 @@ export default function OtherAdminDashboard() {
 
   // SSE setup - runs once on mount
   useEffect(() => {
-    const eventSource = new EventSource('https://angelu-backend.onrender.com/api/sse');
+    const eventSource = new EventSource('https://schedulink-backend.onrender.com/api/sse');
     eventSourceRef.current = eventSource;
 
     eventSource.onmessage = (event) => {
@@ -75,7 +75,7 @@ export default function OtherAdminDashboard() {
         setTimeout(() => {
           if (eventSourceRef.current?.readyState === EventSource.CLOSED) {
             eventSourceRef.current?.close();
-            const newEventSource = new EventSource('https://angelu-backend.onrender.com/api/sse');
+            const newEventSource = new EventSource('https://schedulink-backend.onrender.com/api/sse');
             eventSourceRef.current = newEventSource;
             // Re-attach handlers
             newEventSource.onmessage = eventSource.onmessage;
@@ -98,7 +98,7 @@ export default function OtherAdminDashboard() {
   }, [currentDate]);
 
   const fetchApprovedEvents = () => {
-    fetch('https://angelu-backend.onrender.com/api/events?status=approved')
+    fetch('https://schedulink-backend.onrender.com/api/events?status=approved')
       .then(res => {
         if (res.ok) {
           return res.json();

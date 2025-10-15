@@ -54,7 +54,7 @@ export default function CalendarPage() {
   }, [currentDate]);
 
   const fetchApprovedEvents = () => {
-    fetch('https://angelu-backend.onrender.com/api/events?status=approved')
+    fetch('https://schedulink-backend.onrender.com/api/events?status=approved')
       .then(res => {
         if (res.ok) {
           return res.json();
@@ -182,7 +182,7 @@ export default function CalendarPage() {
   console.log('eventRows length:', eventRows.length);
 
   const handleAddEvent = (newEvent: { name: string; description: string; start_date: string; end_date?: string }) => {
-    fetch('https://angelu-backend.onrender.com/api/events', {
+    fetch('https://schedulink-backend.onrender.com/api/events', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newEvent)

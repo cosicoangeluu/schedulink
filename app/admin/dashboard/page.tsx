@@ -22,7 +22,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     // Fetch total approved events
-    fetch('https://angelu-backend.onrender.com/api/events')
+    fetch('https://schedulink-backend.onrender.com/api/events')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -34,7 +34,7 @@ export default function AdminDashboard() {
       .catch(err => console.error('Failed to fetch events:', err));
 
     // Check for upcoming tasks due within 10 minutes
-    fetch('https://angelu-backend.onrender.com/api/tasks')
+    fetch('https://schedulink-backend.onrender.com/api/tasks')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {

@@ -16,7 +16,7 @@ export default function AdminLogin() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('https://angelu-backend.onrender.com/api/auth/login', {
+      const response = await fetch('https://schedulink-backend.onrender.com/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -41,7 +41,7 @@ export default function StudentDashboard() {
     fetchApprovedEvents();
 
     // Connect to SSE for real-time notifications
-    const eventSource = new EventSource('https://angelu-backend.onrender.com/api/sse');
+    const eventSource = new EventSource('https://schedulink-backend.onrender.com/api/sse');
 
     eventSource.onmessage = (event) => {
       const data = JSON.parse(event.data);
@@ -58,7 +58,7 @@ export default function StudentDashboard() {
       setTimeout(() => {
         if (eventSource.readyState === EventSource.CLOSED) {
           console.log('Attempting to reconnect SSE...');
-          const newEventSource = new EventSource('https://angelu-backend.onrender.com/api/sse');
+          const newEventSource = new EventSource('https://schedulink-backend.onrender.com/api/sse');
           newEventSource.onmessage = eventSource.onmessage;
           newEventSource.onerror = eventSource.onerror;
           // Replace the old eventSource with the new one
@@ -75,7 +75,7 @@ export default function StudentDashboard() {
 
   const fetchApprovedEvents = async () => {
     try {
-      const response = await fetch('https://angelu-backend.onrender.com/api/events?status=approved');
+      const response = await fetch('https://schedulink-backend.onrender.com/api/events?status=approved');
       if (response.ok) {
         const data = await response.json();
         setApprovedEvents(data);
@@ -89,7 +89,7 @@ export default function StudentDashboard() {
   };
 
   const handleAddEvent = (newEvent: { name: string; description: string; start_date: string; end_date?: string }) => {
-    fetch('https://angelu-backend.onrender.com/api/events', {
+    fetch('https://schedulink-backend.onrender.com/api/events', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newEvent)
@@ -119,7 +119,7 @@ export default function StudentDashboard() {
     formData.append('uploadedBy', role);
 
     try {
-      const response = await fetch('https://angelu-backend.onrender.com/api/reports/upload', {
+      const response = await fetch('https://schedulink-backend.onrender.com/api/reports/upload', {
         method: 'POST',
         body: formData,
       });

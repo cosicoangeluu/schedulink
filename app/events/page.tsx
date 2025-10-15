@@ -32,7 +32,7 @@ export default function EventsPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    fetch('https://angelu-backend.onrender.com/api/events')
+    fetch('https://schedulink-backend.onrender.com/api/events')
       .then(res => {
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
@@ -58,7 +58,7 @@ export default function EventsPage() {
   });
 
   const handleDeleteEvent = (eventId: number) => {
-    fetch(`https://angelu-backend.onrender.com/api/events/${eventId}`, { method: 'DELETE' })
+    fetch(`https://schedulink-backend.onrender.com/api/events/${eventId}`, { method: 'DELETE' })
       .then(res => {
         if (res.ok) {
           setEventList(prev => prev.filter(event => event.id !== eventId));
@@ -70,7 +70,7 @@ export default function EventsPage() {
   };
 
   const handleEditEvent = (eventId: number, updatedEvent: { name: string; description: string; start_date: string; end_date?: string; gymnasium: boolean; sports_area: boolean; application_date: string; rental_date: string; behalf_of: string; contact_info: string; nature_of_event: string }) => {
-    fetch(`https://angelu-backend.onrender.com/api/events/${eventId}`, {
+    fetch(`https://schedulink-backend.onrender.com/api/events/${eventId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updatedEvent)

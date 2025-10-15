@@ -48,7 +48,7 @@ export default function NotificationsPage() {
 
   const fetchNotifications = async () => {
     try {
-      const response = await fetch('https://angelu-backend.onrender.com/api/notifications');
+      const response = await fetch('https://schedulink-backend.onrender.com/api/notifications');
       if (!response.ok) {
         throw new Error('Failed to fetch notifications');
       }
@@ -65,7 +65,7 @@ export default function NotificationsPage() {
 
   const handleApprove = async (notificationId: number) => {
     try {
-      const response = await fetch(`https://angelu-backend.onrender.com/api/notifications/${notificationId}/approve`, {
+      const response = await fetch(`https://schedulink-backend.onrender.com/api/notifications/${notificationId}/approve`, {
         method: 'PUT',
       });
 
@@ -82,7 +82,7 @@ export default function NotificationsPage() {
 
   const handleDecline = async (notificationId: number) => {
     try {
-      const response = await fetch(`https://angelu-backend.onrender.com/api/notifications/${notificationId}/decline`, {
+      const response = await fetch(`https://schedulink-backend.onrender.com/api/notifications/${notificationId}/decline`, {
         method: 'PUT',
       });
 
@@ -100,7 +100,7 @@ export default function NotificationsPage() {
   const handleViewDetails = async (notification: Notification) => {
     if (!notification.eventId) return;
     try {
-      const response = await fetch(`https://angelu-backend.onrender.com/api/events/${notification.eventId}`);
+      const response = await fetch(`https://schedulink-backend.onrender.com/api/events/${notification.eventId}`);
       if (!response.ok) {
         throw new Error('Failed to fetch event details');
       }

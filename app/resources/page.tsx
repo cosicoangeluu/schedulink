@@ -24,7 +24,7 @@ export default function ResourcesPage() {
 
   const fetchResources = async () => {
     try {
-      const response = await fetch('https://angelu-backend.onrender.com/api/resources');
+      const response = await fetch('https://schedulink-backend.onrender.com/api/resources');
       if (!response.ok) {
         throw new Error('Failed to fetch resources');
       }
@@ -39,7 +39,7 @@ export default function ResourcesPage() {
 
   const handleDeleteResource = async (id: number) => {
     try {
-      const response = await fetch(`https://angelu-backend.onrender.com/api/resources/${id}`, {
+      const response = await fetch(`https://schedulink-backend.onrender.com/api/resources/${id}`, {
         method: 'DELETE',
       });
       if (!response.ok) {

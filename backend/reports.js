@@ -53,18 +53,41 @@ router.post('/upload', upload.single('report'), async (req, res) => {
   }
 });
 
-// GET /api/reports - Get all reports
+// GET /api/reports - Get all reports with file details
 router.get('/', async (req, res) => {
   try {
     // Query all reports with event names, including reports for deleted events
     const [reports] = await pool.execute(`
-      SELECT r.*, COALESCE(e.name, 'Event Deleted') as eventName
+      SELECT r.id, r.eventId, r.filePath, r.uploadedBy, r.uploadedAt, COALESCE(e.name, 'Event Deleted') as eventName, COALESCE(e.id, r.eventId) as eventId
       FROM reports r
       LEFT JOIN events e ON r.eventId = e.id
       ORDER BY r.uploadedAt DESC
     `);
 
-    res.json(reports);
+    // Add file size and check if file exists
+    const reportsWithDetails = reports.map(report => {
+      const filePath = path.join(__dirname, report.filePath);
+      let fileSize = 0;
+      let exists = false;
+      try {
+        if (fs.existsSync(filePath)) {
+          const stats = fs.statSync(filePath);
+          fileSize = stats.size;
+          exists = true;
+        }
+      } catch (error) {
+        console.error('Error checking file:', error);
+      }
+
+      return {
+        ...report,
+        fileName: path.basename(report.filePath),
+        fileSize,
+        exists
+      };
+    });
+
+    res.json(reportsWithDetails);
   } catch (error) {
     console.error('Error fetching reports:', error);
     res.status(500).json({ error: 'Failed to fetch reports' });
@@ -109,6 +132,95 @@ router.get('/files', async (req, res) => {
   } catch (error) {
     console.error('Error fetching files:', error);
     res.status(500).json({ error: 'Failed to fetch files' });
+  }
+});
+
+// GET /api/reports/file/:id - Serve the uploaded file
+router.get('/file/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await pool.execute('SELECT filePath FROM reports WHERE id = ?', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Report not found' });
+    }
+    const filePath = path.join(__dirname, rows[0].filePath);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+    res.sendFile(filePath);
+  } catch (error) {
+    console.error('Error serving file:', error);
+    res.status(500).json({ error: 'Failed to serve file' });
+  }
+});
+
+// GET /api/reports/sync - Sync existing files in uploads folder with database
+router.get('/sync', async (req, res) => {
+  try {
+    const uploadsDir = path.join(__dirname, 'uploads');
+    
+    // Check if uploads directory exists
+    if (!fs.existsSync(uploadsDir)) {
+      return res.status(404).json({ error: 'Uploads directory not found' });
+    }
+
+    // Read all files in uploads directory
+    const files = fs.readdirSync(uploadsDir).filter(file => file.endsWith('.pdf'));
+    
+    // Get all existing reports from database
+    const [existingReports] = await pool.execute('SELECT filePath FROM reports');
+    const existingPaths = existingReports.map(r => r.filePath);
+    
+    // Find files that are not in database
+    const orphanedFiles = files.filter(file => {
+      const filePath = `uploads/${file}`;
+      return !existingPaths.includes(filePath);
+    });
+
+    if (orphanedFiles.length === 0) {
+      return res.json({ 
+        message: 'All files are already synced', 
+        syncedCount: 0,
+        totalFiles: files.length 
+      });
+    }
+
+    // Get first event to associate orphaned files with
+    const [events] = await pool.execute('SELECT id FROM events ORDER BY id ASC LIMIT 1');
+    
+    if (events.length === 0) {
+      return res.status(400).json({ 
+        error: 'No events found in database. Please create an event first.',
+        orphanedFiles: orphanedFiles.length
+      });
+    }
+
+    const defaultEventId = events[0].id;
+    let syncedCount = 0;
+
+    // Insert orphaned files into database
+    for (const file of orphanedFiles) {
+      const filePath = `uploads/${file}`;
+      try {
+        await pool.execute(
+          'INSERT INTO reports (eventId, filePath, uploadedBy) VALUES (?, ?, ?)',
+          [defaultEventId, filePath, 'system']
+        );
+        syncedCount++;
+      } catch (error) {
+        console.error(`Error syncing file ${file}:`, error);
+      }
+    }
+
+    res.json({ 
+      message: `Successfully synced ${syncedCount} files`, 
+      syncedCount,
+      totalFiles: files.length,
+      orphanedFiles: orphanedFiles.length
+    });
+  } catch (error) {
+    console.error('Error syncing files:', error);
+    res.status(500).json({ error: 'Failed to sync files' });
   }
 });
 
