@@ -26,7 +26,7 @@ export default function UpcomingEvents() {
 
   const fetchUpcomingEvents = async () => {
     try {
-      const eventsRes = await fetch('http://localhost:5000/api/events?status=approved');
+      const eventsRes = await fetch('https://schedulink-backend.onrender.com/api/events?status=approved');
 
       const eventsData = await eventsRes.json();
 

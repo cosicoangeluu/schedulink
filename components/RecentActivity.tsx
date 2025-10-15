@@ -42,8 +42,8 @@ export default function RecentActivity() {
   const fetchRecentActivity = async () => {
     try {
       const [eventsRes, notificationsRes] = await Promise.all([
-        fetch('http://localhost:5000/api/events'),
-        fetch('http://localhost:5000/api/notifications')
+        fetch('https://schedulink-backend.onrender.com/api/events'),
+        fetch('https://schedulink-backend.onrender.com/api/notifications')
       ]);
 
       const events = await eventsRes.json();

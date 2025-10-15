@@ -29,7 +29,7 @@ export default function ChartSection() {
   const fetchChartData = async () => {
     try {
       // Fetch events
-      const eventsRes = await fetch('http://localhost:5000/api/events');
+      const eventsRes = await fetch('https://schedulink-backend.onrender.com/api/events');
 
       const eventsData = await eventsRes.json();
 

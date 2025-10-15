@@ -30,7 +30,7 @@ export default function TodoList({ showModal, onClose }: TodoListProps) {
 
   const fetchTasks = async (date: string) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/tasks?date=${date}`);
+      const res = await fetch(`https://schedulink-backend.onrender.com/api/tasks?date=${date}`);
       const data = await res.json();
       const tasksArray = Array.isArray(data) ? data : [];
       setTasks(tasksArray.sort((a: Task, b: Task) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
@@ -54,7 +54,7 @@ export default function TodoList({ showModal, onClose }: TodoListProps) {
 
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/tasks', {
+      const res = await fetch('https://schedulink-backend.onrender.com/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newTask)
@@ -73,7 +73,7 @@ export default function TodoList({ showModal, onClose }: TodoListProps) {
 
   const handleToggleComplete = async (taskId: number, completed: boolean) => {
     try {
-      await fetch(`http://localhost:5000/api/tasks/${taskId}`, {
+      await fetch(`https://schedulink-backend.onrender.com/api/tasks/${taskId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ completed: !completed })
@@ -88,7 +88,7 @@ export default function TodoList({ showModal, onClose }: TodoListProps) {
     if (!confirm('Are you sure you want to delete this task?')) return;
 
     try {
-      await fetch(`http://localhost:5000/api/tasks/${taskId}`, {
+      await fetch(`https://schedulink-backend.onrender.com/api/tasks/${taskId}`, {
         method: 'DELETE'
       });
       fetchTasks(selectedDate);
