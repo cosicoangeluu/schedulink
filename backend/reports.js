@@ -63,7 +63,7 @@ router.get('/', async (req, res) => {
       ORDER BY r.uploadedAt DESC
     `);
 
-    res.json(reportsWithAttendees);
+    res.json(reports);
   } catch (error) {
     console.error('Error fetching reports:', error);
     res.status(500).json({ error: 'Failed to fetch reports' });
