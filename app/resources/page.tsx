@@ -39,6 +39,8 @@ export default function ResourcesPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     fetchResources();
@@ -101,7 +103,8 @@ export default function ResourcesPage() {
       } else {
         setVenues(prev => prev.filter(r => r.id !== id));
       }
-      alert('Resource deleted successfully!');
+      setSuccessMessage('Resource deleted successfully!');
+      setShowSuccessModal(true);
     } catch (error) {
       console.error('Error deleting resource:', error);
       alert(error instanceof Error ? error.message : 'Failed to delete resource. Please try again.');
@@ -131,7 +134,8 @@ export default function ResourcesPage() {
       } else {
         setVenues(prev => [...prev, newItem]);
       }
-      alert('Resource added successfully!');
+      setSuccessMessage('Resource added successfully!');
+      setShowSuccessModal(true);
     } catch (error) {
       console.error('Error adding resource:', error);
       alert(error instanceof Error ? error.message : 'Failed to add resource. Please try again.');
@@ -168,7 +172,8 @@ export default function ResourcesPage() {
       }
       setShowEditModal(false);
       setSelectedResource(null);
-      alert('Resource updated successfully!');
+      setSuccessMessage('Resource updated successfully!');
+      setShowSuccessModal(true);
     } catch (error) {
       console.error('Error updating resource:', error);
       alert(error instanceof Error ? error.message : 'Failed to update resource. Please try again.');
@@ -314,6 +319,14 @@ export default function ResourcesPage() {
             }}
             onEdit={handleEditResource}
             resource={selectedResource}
+          />
+        )}
+
+        {showSuccessModal && (
+          <SuccessNotificationModal
+            isOpen={showSuccessModal}
+            message={successMessage}
+            onClose={() => setShowSuccessModal(false)}
           />
         )}
       </div>
