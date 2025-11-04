@@ -10,13 +10,29 @@ interface Event {
   description: string;
   start_date: string;
   end_date?: string;
-  gymnasium: boolean;
-  sports_area: boolean;
+  venues: number[];
+  equipment: {id: number, quantity: number}[];
   application_date: string;
   rental_date: string;
   behalf_of: string;
   contact_info: string;
   nature_of_event: string;
+  requires_equipment?: boolean;
+  chairs_qty?: number;
+  tables_qty?: number;
+  projector?: boolean;
+  other_equipment?: string;
+  setup_start_time?: string;
+  setup_end_time?: string;
+  setup_hours?: number;
+  event_start_time?: string;
+  event_end_time?: string;
+  event_hours?: number;
+  cleanup_start_time?: string;
+  cleanup_end_time?: string;
+  cleanup_hours?: number;
+  total_hours?: number;
+  multi_day_schedule?: string;
   status: string;
   created_at: string;
 }
@@ -32,7 +48,17 @@ export default function EventsPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    fetch('https://schedulink-backend.onrender.com/api/events')
+    const token = localStorage.getItem('adminToken');
+    if (!token) {
+      console.error('No admin token found. Please log in as admin.');
+      return;
+    }
+    fetch('https://schedulink-backend.onrender.com/api/events', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
       .then(res => {
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
@@ -58,7 +84,14 @@ export default function EventsPage() {
   });
 
   const handleDeleteEvent = (eventId: number) => {
-    fetch(`https://schedulink-backend.onrender.com/api/events/${eventId}`, { method: 'DELETE' })
+    const token = localStorage.getItem('adminToken');
+    fetch(`https://schedulink-backend.onrender.com/api/events/${eventId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    })
       .then(res => {
         if (res.ok) {
           setEventList(prev => prev.filter(event => event.id !== eventId));
@@ -69,15 +102,64 @@ export default function EventsPage() {
       .catch(err => console.error('Failed to delete event:', err));
   };
 
-  const handleEditEvent = (eventId: number, updatedEvent: { name: string; description: string; start_date: string; end_date?: string; gymnasium: boolean; sports_area: boolean; application_date: string; rental_date: string; behalf_of: string; contact_info: string; nature_of_event: string }) => {
-    fetch(`https://schedulink-backend.onrender.com/api/events/${eventId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedEvent)
+  const handleAddEvent = (eventData: { name: string; description: string; start_date: string; end_date?: string; venues: number[]; equipment: {id: number, quantity: number}[]; application_date: string; rental_date: string; behalf_of: string; contact_info: string; nature_of_event: string; requires_equipment?: boolean; chairs_qty?: number; tables_qty?: number; projector?: boolean; other_equipment?: string; setup_start_time?: string; setup_end_time?: string; setup_hours?: number; event_start_time?: string; event_end_time?: string; event_hours?: number; cleanup_start_time?: string; cleanup_end_time?: string; cleanup_hours?: number; total_hours?: number; multi_day_schedule?: File }) => {
+    const formData = new FormData();
+
+    // Add all fields to FormData
+    Object.entries(eventData).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        if (key === 'venues' || key === 'equipment') {
+          formData.append(key, JSON.stringify(value));
+        } else if (key === 'multi_day_schedule' && value instanceof File) {
+          formData.append(key, value);
+        } else {
+          formData.append(key, String(value));
+        }
+      }
+    });
+
+    const token = localStorage.getItem('adminToken');
+    fetch('https://schedulink-backend.onrender.com/api/events', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
     })
       .then(res => res.json())
       .then(data => {
-        setEventList(prev => prev.map(event => event.id === eventId ? { ...event, ...updatedEvent } : event));
+        setEventList(prev => [...prev, data]);
+      })
+      .catch(err => console.error('Failed to add event:', err));
+  };
+
+  const handleEditEvent = (eventId: number, updatedEvent: { name: string; description: string; start_date: string; end_date?: string; venues: number[]; equipment: {id: number, quantity: number}[]; application_date: string; rental_date: string; behalf_of: string; contact_info: string; nature_of_event: string; requires_equipment?: boolean; chairs_qty?: number; tables_qty?: number; projector?: boolean; other_equipment?: string; setup_start_time?: string; setup_end_time?: string; setup_hours?: number; event_start_time?: string; event_end_time?: string; event_hours?: number; cleanup_start_time?: string; cleanup_end_time?: string; cleanup_hours?: number; total_hours?: number; multi_day_schedule?: string | File }) => {
+    const formData = new FormData();
+
+    // Add all fields to FormData
+    Object.entries(updatedEvent).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        if (key === 'venues' || key === 'equipment') {
+          formData.append(key, JSON.stringify(value));
+        } else if (key === 'multi_day_schedule' && value instanceof File) {
+          formData.append(key, value);
+        } else {
+          formData.append(key, String(value));
+        }
+      }
+    });
+
+    const token = localStorage.getItem('adminToken');
+    fetch(`https://schedulink-backend.onrender.com/api/events/${eventId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    })
+      .then(res => res.json())
+      .then(data => {
+        setEventList(prev => prev.map(event => event.id === eventId ? { ...event, ...data } : event));
       })
       .catch(err => console.error('Failed to edit event:', err));
   };
@@ -143,7 +225,7 @@ export default function EventsPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="group">
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2 items-center gap-2">
                   <i className="ri-file-search-line text-blue-500"></i>
                   Search Events
                 </label>
@@ -153,7 +235,7 @@ export default function EventsPage() {
                     placeholder="Search by event name..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:shadow-lg text-sm font-medium"
+                    className="w-full pl-12 pr-4 py-4 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:shadow-lg text-sm font-medium text-gray-900"
                   />
                   <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-900 group-focus-within:text-blue-500 transition-colors duration-300">
                     <i className="ri-search-line text-lg"></i>
@@ -162,7 +244,7 @@ export default function EventsPage() {
               </div>
 
               <div className="group">
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2 items-center gap-2">
                   <i className="ri-calendar-line text-green-500"></i>
                   Filter by Date
                 </label>
@@ -171,7 +253,7 @@ export default function EventsPage() {
                     type="date"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 hover:shadow-lg text-sm font-medium"
+                    className="w-full pl-12 pr-4 py-4 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 hover:shadow-lg text-sm font-medium text-gray-900"
                   />
                   <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-green-500 transition-colors duration-300">
                     <i className="ri-calendar-line text-lg"></i>
@@ -217,8 +299,8 @@ export default function EventsPage() {
           {filteredEvents.map((event, index) => (
             <div
               key={event.id}
-              className="animate-fade-in-up"
-              style={{ animationDelay: `${index * 100}ms` }}
+              className="opacity-0 animate-fade-in"
+              style={{ animationDelay: `${index * 150}ms`, animationFillMode: 'forwards' }}
             >
               <EventCard
                 event={event}

@@ -53,17 +53,30 @@ async function initializeDatabase() {
     `);
 
     await pool.execute(`
-      CREATE TABLE IF NOT EXISTS resources (
+      CREATE TABLE IF NOT EXISTS venues (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         description TEXT,
-        category VARCHAR(100),
+        category VARCHAR(100) DEFAULT 'Venue',
         availability BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
-
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS resources (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        category VARCHAR(100),
+        total INT NOT NULL,
+        available INT NOT NULL,
+        location VARCHAR(255),
+        status VARCHAR(50) DEFAULT 'available',
+        \`condition\` VARCHAR(50) DEFAULT 'good',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
 
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS reports (
@@ -71,8 +84,7 @@ async function initializeDatabase() {
         eventId INT NOT NULL,
         filePath VARCHAR(255) NOT NULL,
         uploadedBy VARCHAR(50) NOT NULL,
-        uploadedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (eventId) REFERENCES events(id)
+        uploadedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
@@ -97,7 +109,7 @@ async function initializeDatabase() {
     `);
 
     // Insert default admin user if not exists
-    const bcrypt = require('bcrypt');
+    const bcrypt = require('bcryptjs');
     const hashedPassword = await bcrypt.hash('admin123', 10);
     await pool.execute(`
       INSERT IGNORE INTO admins (username, password_hash) VALUES (?, ?)

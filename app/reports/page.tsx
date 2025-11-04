@@ -37,6 +37,8 @@ export default function ReportsPage() {
   const [loadingFiles, setLoadingFiles] = useState(true);
   const [eventsError, setEventsError] = useState<string | null>(null);
   const [filesError, setFilesError] = useState<string | null>(null);
+  const [successModalOpen, setSuccessModalOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     fetchEventsAndAttendees();
@@ -47,7 +49,16 @@ export default function ReportsPage() {
     setLoadingEvents(true);
     setEventsError(null);
     try {
-      const response = await fetch('https://schedulink-backend.onrender.com/api/events?status=approved');
+      const token = role === 'admin' ? localStorage.getItem('adminToken') : null;
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const response = await fetch('https://schedulink-backend.onrender.com/api/events?status=approved', {
+        headers
+      });
       if (response.ok) {
         const data = await response.json();
         setEvents(data);
@@ -70,7 +81,13 @@ export default function ReportsPage() {
     setLoadingFiles(true);
     setFilesError(null);
     try {
-      const response = await fetch('https://schedulink-backend.onrender.com/api/reports');
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch('https://schedulink-backend.onrender.com/api/reports', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         setUploadedFiles(data);
@@ -104,7 +121,8 @@ export default function ReportsPage() {
 
       if (response.ok) {
         const result = await response.json();
-        alert('Report uploaded successfully!');
+        setSuccessMessage('Report uploaded successfully!');
+        setSuccessModalOpen(true);
         setSelectedFile(null);
         // Reset file input
         const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -119,6 +137,35 @@ export default function ReportsPage() {
       alert('Error uploading report');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleDeleteFile = async (fileId: number) => {
+    if (!confirm('Are you sure you want to delete this report? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('adminToken');
+      const response = await fetch(`https://schedulink-backend.onrender.com/api/reports/${fileId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        setSuccessMessage('Report deleted successfully!');
+        setSuccessModalOpen(true);
+        fetchUploadedFiles();
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        alert(`Failed to delete report: ${errorData.error || 'Please try again'}`);
+      }
+    } catch (error) {
+      console.error('Error deleting report:', error);
+      alert('Error deleting report');
     }
   };
 
@@ -296,15 +343,32 @@ export default function ReportsPage() {
                         {!file.exists && <p className="text-sm text-red-500 flex items-center"><i className="ri-error-warning-line mr-1"></i>File not found on server</p>}
                       </div>
                       {file.exists && (
-                        <a
-                          href={`https://schedulink-backend.onrender.com/api/reports/file/${file.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-3 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300 font-medium shadow-md hover:shadow-lg"
-                        >
-                          <i className="ri-eye-line mr-2"></i>
-                          View File
-                        </a>
+                        <div className="flex space-x-2">
+                          <a
+                            href={`https://schedulink-backend.onrender.com/api/reports/file/${file.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-2 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300 font-medium shadow-md hover:shadow-lg text-sm"
+                          >
+                            <i className="ri-eye-line mr-1"></i>
+                            View
+                          </a>
+                          <a
+                            href={`https://schedulink-backend.onrender.com/api/reports/file/${file.id}`}
+                            download={file.fileName}
+                            className="inline-flex items-center justify-center flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-2 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-300 font-medium shadow-md hover:shadow-lg text-sm"
+                          >
+                            <i className="ri-download-line mr-1"></i>
+                            Download
+                          </a>
+                          <button
+                            onClick={() => handleDeleteFile(file.id)}
+                            className="inline-flex items-center justify-center flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-2 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 font-medium shadow-md hover:shadow-lg text-sm"
+                          >
+                            <i className="ri-delete-bin-line mr-1"></i>
+                            Delete
+                          </button>
+                        </div>
                       )}
                       {!file.exists && (
                         <div className="inline-flex items-center justify-center w-full bg-gray-300 text-gray-500 px-4 py-3 rounded-lg font-medium cursor-not-allowed">

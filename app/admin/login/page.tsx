@@ -3,11 +3,14 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+export const dynamic = 'force-static';
+
 export default function AdminLogin() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -28,7 +31,11 @@ export default function AdminLogin() {
 
       if (response.ok && data.success) {
         localStorage.setItem('adminLoggedIn', 'true');
-        router.push('/admin/dashboard');
+        localStorage.setItem('adminToken', data.token);
+        setShowSuccess(true);
+        setTimeout(() => {
+          router.push('/admin/dashboard');
+        }, 2000);
       } else {
         setError(data.error || 'Login failed');
       }
@@ -59,8 +66,19 @@ export default function AdminLogin() {
         <div className="absolute bottom-1/4 left-1/3 w-1 h-1 bg-purple-300 rounded-full opacity-30 animate-ping animation-delay-7000"></div>
       </div>
 
+      {/* Back Button */}
+      <div className="absolute top-4 left-4 z-20">
+        <button
+          onClick={() => router.push('/')}
+          className="flex items-center px-4 py-2 bg-white bg-opacity-10 backdrop-blur-sm border border-white border-opacity-20 rounded-2xl text-white hover:bg-opacity-20 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
+        >
+          <i className="ri-arrow-left-line mr-2"></i>
+          Back
+        </button>
+      </div>
+
       {/* Main Login Card */}
-      <div className="relative w-full max-w-md lg:max-w-lg mx-auto z-10">
+      <div className="relative w-full max-w-md lg:max-w-lg mx-auto z-10 animate-fade-in">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl shadow-2xl mb-6 transform hover:rotate-12 transition-transform duration-300">
@@ -89,7 +107,7 @@ export default function AdminLogin() {
             <form className="space-y-6" onSubmit={handleLogin}>
               {/* Username Input */}
               <div className="group">
-                <label htmlFor="username" className="block text-sm font-semibold text-white mb-3 flex items-center">
+                <label htmlFor="username" className="block text-sm font-semibold text-white mb-3 items-center">
                   <i className="ri-user-line mr-2 text-red-400"></i>
                   Username
                 </label>
@@ -110,7 +128,7 @@ export default function AdminLogin() {
 
               {/* Password Input */}
               <div className="group">
-                <label htmlFor="password" className="block text-sm font-semibold text-white mb-3 flex items-center">
+                <label htmlFor="password" className="block text-sm font-semibold text-white mb-3 items-center">
                   <i className="ri-lock-line mr-2 text-red-400"></i>
                   Password
                 </label>
@@ -137,6 +155,17 @@ export default function AdminLogin() {
                     <span className="text-red-100 font-semibold">Error</span>
                   </div>
                   <p className="text-red-100 text-sm">{error}</p>
+                </div>
+              )}
+
+              {/* Success Message */}
+              {showSuccess && (
+                <div className="bg-green-500 bg-opacity-20 border-2 border-green-400 border-opacity-50 rounded-2xl p-4 text-center backdrop-blur-sm animate-fade-in">
+                  <div className="flex items-center justify-center mb-1">
+                    <i className="ri-check-line text-green-300 mr-2"></i>
+                    <span className="text-green-100 font-semibold">Success</span>
+                  </div>
+                  <p className="text-green-100 text-sm">Login successful! Redirecting to dashboard...</p>
                 </div>
               )}
 

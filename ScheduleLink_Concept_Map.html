@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScheduleLink System - Concept Map</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #2d3748;
+            margin-bottom: 40px;
+            font-size: 2.5em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 4px solid #667eea;
+            padding-bottom: 15px;
+        }
+
+        .concept-map {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            position: relative;
+        }
+
+        /* Main System Box */
+        .main-system {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 1.8em;
+            font-weight: bold;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+            margin-bottom: 20px;
+        }
+
+        /* Grid Layout for Components */
+        .components-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .component-box {
+            background: #f7fafc;
+            border: 3px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .component-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            border-color: #667eea;
+        }
+
+        .component-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .component-box ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .component-box li {
+            padding: 8px 0;
+            color: #4a5568;
+            position: relative;
+            padding-left: 25px;
+        }
+
+        .component-box li:before {
+            content: "▸";
+            position: absolute;
+            left: 5px;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        /* Color coding for different component types */
+        .user-interface {
+            border-left: 6px solid #48bb78;
+        }
+
+        .auth-system {
+            border-left: 6px solid #ed8936;
+        }
+
+        .event-management {
+            border-left: 6px solid #4299e1;
+        }
+
+        .resource-management {
+            border-left: 6px solid #9f7aea;
+        }
+
+        .notification-system {
+            border-left: 6px solid #f56565;
+        }
+
+        .reports-system {
+            border-left: 6px solid #38b2ac;
+        }
+
+        .task-management {
+            border-left: 6px solid #ecc94b;
+        }
+
+        .calendar-system {
+            border-left: 6px solid #ed64a6;
+        }
+
+        .database-system {
+            border-left: 6px solid #667eea;
+        }
+
+        .performance-security {
+            border-left: 6px solid #fc8181;
+        }
+
+        /* Database Section - Special Layout */
+        .database-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+
+        .database-section .component-title {
+            color: white;
+            border-bottom-color: white;
+            font-size: 1.5em;
+        }
+
+        .database-section ul {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .database-section li {
+            background: rgba(255,255,255,0.1);
+            padding: 12px;
+            border-radius: 8px;
+            color: white;
+        }
+
+        .database-section li:before {
+            color: #ffd700;
+        }
+
+        /* Technology Stack */
+        .tech-stack {
+            background: #2d3748;
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-top: 30px;
+        }
+
+        .tech-stack h2 {
+            color: #ffd700;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .tech-item {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        /* User Roles Section */
+        .user-roles {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .role-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .role-card h3 {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+        }
+
+        .role-card p {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 30px;
+            padding: 20px;
+            background: #f7fafc;
+            border-radius: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+            .container {
+                box-shadow: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .user-roles {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ScheduleLink System - Concept Map</h1>
+        
+        <div class="concept-map">
+            <!-- Main System -->
+            <div class="main-system">
+                WEB-BASED EVENT COORDINATION & RESOURCE MANAGEMENT SYSTEM
+            </div>
+
+            <!-- User Roles -->
+            <div class="user-roles">
+                <div class="role-card">
+                    <h3>Admin</h3>
+                    <p>Manage events, users, resources. Approve/decline requests and generate reports.</p>
+                </div>
+                <div class="role-card">
+                    <h3>Calendar Viewer</h3>
+                    <p>View calendar and get notified about approved events.</p>
+                </div>
+                <div class="role-card">
+                    <h3>Student/Department Head</h3>
+                    <p>Register for events, submit reports, and view schedules.</p>
+                </div>
+            </div>
+
+            <!-- Main Components Grid -->
+            <div class="components-grid">
+                <!-- User Interface -->
+                <div class="component-box user-interface">
+                    <div class="component-title">User Interface</div>
+                    <ul>
+                        <li>Role Selection Landing Page</li>
+                        <li>Simple and Clear Navigation</li>
+                        <li>Responsive Design</li>
+                        <li>Easy Features for Accessibility</li>
+                        <li>Dashboard Views (Admin, Student, Calendar)</li>
+                        <li>Real-time Updates</li>
+                    </ul>
+                </div>
+
+                <!-- Authentication System -->
+                <div class="component-box auth-system">
+                    <div class="component-title">Authentication System</div>
+                    <ul>
+                        <li>Admin Login</li>
+                        <li>Multi-Role Access Control</li>
+                        <li>Secure Password Hashing (bcrypt)</li>
+                        <li>Admin Management (CRUD)</li>
+                        <li>Session Management</li>
+                        <li>Password Update & Reset</li>
+                    </ul>
+                </div>
+
+                <!-- Event Scheduling and Management -->
+                <div class="component-box event-management">
+                    <div class="component-title">Event Scheduling & Management</div>
+                    <ul>
+                        <li>Add, Edit, Delete Events</li>
+                        <li>Update Event Details</li>
+                        <li>Set Day, Month, Year</li>
+                        <li>Venue Selection (Gymnasium, Sports Area)</li>
+                        <li>Event Status Workflow (Pending → Approved/Declined)</li>
+                        <li>Application & Rental Dates</li>
+                        <li>Contact Information Management</li>
+                        <li>Nature of Event Documentation</li>
+                    </ul>
+                </div>
+
+                <!-- Resource Management -->
+                <div class="component-box resource-management">
+                    <div class="component-title">Resource Management</div>
+                    <ul>
+                        <li>Book Venues</li>
+                        <li>Track Utilities</li>
+                        <li>Resource Availability Status</li>
+                        <li>Category Management</li>
+                        <li>Resource Booking Requests</li>
+                        <li>Approval Workflow</li>
+                        <li>Resource Analytics & Charts</li>
+                    </ul>
+                </div>
+
+                <!-- Notification System -->
+                <div class="component-box notification-system">
+                    <div class="component-title">Notification System</div>
+                    <ul>
+                        <li>Event Approval Notifications</li>
+                        <li>Resource Booking Alerts</li>
+                        <li>Real-time Updates (SSE)</li>
+                        <li>Status Tracking (Pending, Approved, Declined)</li>
+                        <li>Broadcast to Multiple Users</li>
+                        <li>Event Approved Announcements</li>
+                    </ul>
+                </div>
+
+                <!-- Reports System -->
+                <div class="component-box reports-system">
+                    <div class="component-title">Reports System</div>
+                    <ul>
+                        <li>Upload Event Reports (PDF)</li>
+                        <li>Track Attendance</li>
+                        <li>Get Feedback</li>
+                        <li>Link Reports to Events</li>
+                        <li>Upload Tracking (Who & When)</li>
+                        <li>File Management</li>
+                        <li>Report History</li>
+                    </ul>
+                </div>
+
+                <!-- Task Management -->
+                <div class="component-box task-management">
+                    <div class="component-title">Task Management (To-Do List)</div>
+                    <ul>
+                        <li>Create Tasks with Due Dates</li>
+                        <li>Set Time & Date</li>
+                        <li>Add Notes to Tasks</li>
+                        <li>Mark Tasks as Completed</li>
+                        <li>Filter by Date</li>
+                        <li>Update & Delete Tasks</li>
+                        <li>Task Priority Management</li>
+                    </ul>
+                </div>
+
+                <!-- Calendar System -->
+                <div class="component-box calendar-system">
+                    <div class="component-title">Calendar System</div>
+                    <ul>
+                        <li>View Approved Events</li>
+                        <li>Display Event Schedules</li>
+                        <li>Monthly/Weekly/Daily Views</li>
+                        <li>Event Details on Click</li>
+                        <li>Color-coded Events</li>
+                        <li>Export Calendar Data</li>
+                    </ul>
+                </div>
+
+                <!-- Performance & Security -->
+                <div class="component-box performance-security">
+                    <div class="component-title">Performance & Security</div>
+                    <ul>
+                        <li>API Rate Limiting</li>
+                        <li>Caching (5-min for GET requests)</li>
+                        <li>CORS Configuration</li>
+                        <li>File Upload Security</li>
+                        <li>SQL Injection Prevention</li>
+                        <li>Cache Invalidation</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Database Management System -->
+            <div class="database-section">
+                <div class="component-title">Database Management System</div>
+                <ul>
+                    <li><strong>User Data Management:</strong> Admin accounts with secure authentication</li>
+                    <li><strong>Event Data Storage:</strong> Complete event information with status tracking</li>
+                    <li><strong>Resource Tracking:</strong> Venue and resource availability management</li>
+                    <li><strong>Scheduling & Conflict Handling:</strong> Date/time validation and overlap prevention</li>
+                    <li><strong>Participant Registration:</strong> Event-user relationships and attendance</li>
+                    <li><strong>Venue & Resource Tracking:</strong> Real-time availability updates</li>
+                    <li><strong>Feedback & Reporting:</strong> Event reports and file storage</li>
+                    <li><strong>Notification Queue:</strong> Status-based notification management</li>
+                    <li><strong>Task Storage:</strong> To-do list with due dates and completion status</li>
+                    <li><strong>Foreign Key Relationships:</strong> Data integrity across tables</li>
+                </ul>
+            </div>
+
+            <!-- Technology Stack -->
+            <div class="tech-stack">
+                <h2>🛠️ Technology Stack</h2>
+                <div class="tech-grid">
+                    <div class="tech-item">Next.js 14 (Frontend)</div>
+                    <div class="tech-item">React 18</div>
+                    <div class="tech-item">TypeScript</div>
+                    <div class="tech-item">Tailwind CSS</div>
+                    <div class="tech-item">Node.js (Backend)</div>
+                    <div class="tech-item">Express.js</div>
+                    <div class="tech-item">MySQL Database</div>
+                    <div class="tech-item">bcrypt (Security)</div>
+                    <div class="tech-item">Server-Sent Events (SSE)</div>
+                    <div class="tech-item">Multer (File Upload)</div>
+                    <div class="tech-item">CORS</div>
+                    <div class="tech-item">Redis-like Caching</div>
+                </div>
+            </div>
+
+            <!-- Legend -->
+            <div class="legend">
+                <h3 style="width: 100%; margin-bottom: 10px; color: #2d3748;">Component Categories:</h3>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #48bb78;"></div>
+                    <span>User Interface</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ed8936;"></div>
+                    <span>Authentication</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #4299e1;"></div>
+                    <span>Event Management</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #9f7aea;"></div>
+                    <span>Resource Management</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f56565;"></div>
+                    <span>Notifications</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #38b2ac;"></div>
+                    <span>Reports</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ecc94b;"></div>
+                    <span>Task Management</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ed64a6;"></div>
+                    <span>Calendar</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #667eea;"></div>
+                    <span>Database</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #fc8181;"></div>
+                    <span>Security</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

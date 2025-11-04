@@ -10,14 +10,16 @@ interface Resource {
   category: string;
   availability: boolean;
   created_at: string;
+  type: 'equipment' | 'venue';
 }
 
 interface ResourceCardProps {
   resource: Resource;
   onDelete: (id: number) => void;
+  onEdit: (resource: Resource) => void;
 }
 
-export default function ResourceCard({ resource, onDelete }: ResourceCardProps) {
+export default function ResourceCard({ resource, onDelete, onEdit }: ResourceCardProps) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const getAvailabilityColor = (availability: boolean) => {
@@ -66,7 +68,11 @@ export default function ResourceCard({ resource, onDelete }: ResourceCardProps) 
         </div>
 
         <div className="flex space-x-1">
-          <button title="Edit" className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer">
+          <button
+            title="Edit"
+            onClick={() => onEdit(resource)}
+            className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+          >
             <div className="w-4 h-4 flex items-center justify-center">
               <i className="ri-edit-line"></i>
             </div>

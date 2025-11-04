@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import ChartSection from '../components/ChartSection';
 import KPICard from '../components/KPICard';
-
 import RecentActivity from '../components/RecentActivity';
 import Sidebar from '../components/Sidebar';
 import UpcomingEvents from '../components/UpcomingEvents';

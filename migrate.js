@@ -9,15 +9,18 @@ async function migrate() {
   });
 
   try {
-    // Add new columns to events table
-    await connection.promise().execute('ALTER TABLE events ADD COLUMN gymnasium BOOLEAN DEFAULT FALSE');
-    await connection.promise().execute('ALTER TABLE events ADD COLUMN sports_area BOOLEAN DEFAULT FALSE');
-    await connection.promise().execute('ALTER TABLE events ADD COLUMN application_date DATE');
-    await connection.promise().execute('ALTER TABLE events ADD COLUMN rental_date DATE');
-    await connection.promise().execute('ALTER TABLE events ADD COLUMN behalf_of VARCHAR(255)');
-    await connection.promise().execute('ALTER TABLE events ADD COLUMN contact_info VARCHAR(255)');
-    await connection.promise().execute('ALTER TABLE events ADD COLUMN nature_of_event TEXT');
-    console.log('Migration completed: added new columns to events table');
+    // Add new columns to events table for resources section
+    await connection.promise().execute('ALTER TABLE events ADD COLUMN requires_equipment BOOLEAN DEFAULT FALSE');
+    await connection.promise().execute('ALTER TABLE events ADD COLUMN chairs_qty INT DEFAULT 0');
+    await connection.promise().execute('ALTER TABLE events ADD COLUMN tables_qty INT DEFAULT 0');
+    await connection.promise().execute('ALTER TABLE events ADD COLUMN projector BOOLEAN DEFAULT FALSE');
+    await connection.promise().execute('ALTER TABLE events ADD COLUMN other_equipment TEXT');
+    await connection.promise().execute('ALTER TABLE events ADD COLUMN setup_days INT DEFAULT 0');
+    await connection.promise().execute('ALTER TABLE events ADD COLUMN setup_hours INT DEFAULT 0');
+    await connection.promise().execute('ALTER TABLE events ADD COLUMN cleanup_hours INT DEFAULT 0');
+    await connection.promise().execute('ALTER TABLE events ADD COLUMN total_hours INT DEFAULT 0');
+    await connection.promise().execute('ALTER TABLE events ADD COLUMN multi_day_schedule VARCHAR(255)');
+    console.log('Migration completed: added resources columns to events table');
   } catch (error) {
     console.error('Migration failed:', error);
   } finally {

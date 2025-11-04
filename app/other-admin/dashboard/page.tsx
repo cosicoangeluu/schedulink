@@ -1,8 +1,8 @@
 'use client';
 
+import ViewEventModal from '@/app/events/ViewEventModal';
 import { useEffect, useRef, useState } from 'react';
 import Sidebar from '../../../components/Sidebar';
-import EventDetailsModal from '../../events/EventDetailsModal';
 
 interface Event {
   id: number;
@@ -43,15 +43,7 @@ export default function OtherAdminDashboard() {
 
   const today = new Date().toISOString().split('T')[0];
 
-  const showToast = (message: string) => {
-    const toast = document.createElement('div');
-    toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    setTimeout(() => {
-      document.body.removeChild(toast);
-    }, 5000);
-  };
+
 
   // SSE setup - runs once on mount
   useEffect(() => {
@@ -62,8 +54,7 @@ export default function OtherAdminDashboard() {
       const data = JSON.parse(event.data);
       if (data.type === 'event_approved') {
         setNotifications(prev => [...prev, data.message]);
-        // Show toast notification
-        showToast(data.message);
+
       }
     };
 
@@ -71,6 +62,7 @@ export default function OtherAdminDashboard() {
       console.error('SSE error:', error);
       console.error('SSE readyState:', eventSource.readyState);
       if (eventSource.readyState === EventSource.CLOSED) {
+        
         // Attempt to reconnect after 5 seconds
         setTimeout(() => {
           if (eventSourceRef.current?.readyState === EventSource.CLOSED) {
@@ -98,7 +90,12 @@ export default function OtherAdminDashboard() {
   }, [currentDate]);
 
   const fetchApprovedEvents = () => {
-    fetch('https://schedulink-backend.onrender.com/api/events?status=approved')
+    // No token needed for public calendar view - backend allows unauthenticated access to approved events
+    fetch('https://schedulink-backend.onrender.com/api/events?status=approved', {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
       .then(res => {
         if (res.ok) {
           return res.json();
@@ -229,7 +226,7 @@ export default function OtherAdminDashboard() {
         </button>
       </div>
 
-      <div className="flex-1 pt-16 md:pt-0 p-4 sm:p-8">
+      <div className="flex-1 pt-16 md:pt-0 p-4 sm:p-8 animate-fade-in">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900">Other Admin Dashboard</h1>
           <p className="text-gray-600 mt-1">Manage and view approved events calendar</p>
@@ -365,7 +362,7 @@ export default function OtherAdminDashboard() {
       </div>
 
       {showDetailsModal && selectedEvent && (
-        <EventDetailsModal
+        <ViewEventModal
           event={selectedEvent}
           onClose={() => {
             setShowDetailsModal(false);

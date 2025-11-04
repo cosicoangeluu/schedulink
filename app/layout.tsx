@@ -1,6 +1,7 @@
 'use client';
 
 import { Geist, Geist_Mono, Pacifico } from "next/font/google";
+import { Toaster } from "react-hot-toast";
 import ClientLayout from "../components/ClientLayout";
 import { RoleProvider } from "../components/RoleContext";
 import { NotificationsProvider } from "../context/NotificationsContext";
@@ -39,6 +40,7 @@ export default function RootLayout({
           <NotificationsProvider>
             <ClientLayout>
               {children}
+              <Toaster position="bottom-right" />
             </ClientLayout>
           </NotificationsProvider>
         </RoleProvider>

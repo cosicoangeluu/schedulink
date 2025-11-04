@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRole } from '../../../components/RoleContext';
 import Sidebar from '../../../components/Sidebar';
+import SuccessNotificationModal from '../../../components/SuccessNotificationModal';
 import AddEventModal from '../../events/AddEventModal';
 
 interface Event {
@@ -29,53 +30,30 @@ export default function StudentDashboard() {
   const { role } = useRole();
   const [showAddModal, setShowAddModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [notifications, setNotifications] = useState<string[]>([]);
+
 
   // Reports state
   const [approvedEvents, setApprovedEvents] = useState<Event[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<number>(0);
   const [uploading, setUploading] = useState(false);
+  const [successModalOpen, setSuccessModalOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     fetchApprovedEvents();
 
-    // Connect to SSE for real-time notifications
-    const eventSource = new EventSource('https://schedulink-backend.onrender.com/api/sse');
 
-    eventSource.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'event_approved') {
-        setNotifications(prev => [...prev, data.message]);
-        // Show toast notification
-        showToast(data.message);
-      }
-    };
-
-    eventSource.onerror = (error) => {
-      console.error('SSE error:', error);
-      // Attempt to reconnect on error
-      setTimeout(() => {
-        if (eventSource.readyState === EventSource.CLOSED) {
-          console.log('Attempting to reconnect SSE...');
-          const newEventSource = new EventSource('https://schedulink-backend.onrender.com/api/sse');
-          newEventSource.onmessage = eventSource.onmessage;
-          newEventSource.onerror = eventSource.onerror;
-          // Replace the old eventSource with the new one
-          eventSource.close();
-          // Note: In a real implementation, you'd need to manage the new connection properly
-        }
-      }, 5000);
-    };
-
-    return () => {
-      eventSource.close();
-    };
   }, []);
 
   const fetchApprovedEvents = async () => {
     try {
-      const response = await fetch('https://schedulink-backend.onrender.com/api/events?status=approved');
+      // No token needed for public calendar view - backend allows unauthenticated access to approved events
+      const response = await fetch('https://schedulink-backend.onrender.com/api/events?status=approved', {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         setApprovedEvents(data);
@@ -88,11 +66,73 @@ export default function StudentDashboard() {
     }
   };
 
-  const handleAddEvent = (newEvent: { name: string; description: string; start_date: string; end_date?: string }) => {
+  const handleAddEvent = async (eventData: { name: string; description: string; start_date: string; end_date?: string; venues: number[]; application_date: string; rental_date: string; behalf_of: string; contact_info: string; nature_of_event: string; requires_equipment?: boolean; chairs_qty?: number; tables_qty?: number; projector?: boolean; other_equipment?: string; setup_start_time?: string; setup_end_time?: string; setup_hours?: number; event_start_time?: string; event_end_time?: string; event_hours?: number; cleanup_start_time?: string; cleanup_end_time?: string; cleanup_hours?: number; total_hours?: number; multi_day_schedule?: File }) => {
+    const formData = new FormData();
+    formData.append('name', eventData.name);
+    formData.append('description', eventData.description);
+    formData.append('start_date', eventData.start_date);
+    if (eventData.end_date) {
+      formData.append('end_date', eventData.end_date);
+    }
+    formData.append('venues', JSON.stringify(eventData.venues));
+    formData.append('equipment', JSON.stringify([]));
+    formData.append('application_date', eventData.application_date);
+    formData.append('rental_date', eventData.rental_date);
+    formData.append('behalf_of', eventData.behalf_of);
+    formData.append('contact_info', eventData.contact_info);
+    formData.append('nature_of_event', eventData.nature_of_event);
+    formData.append('requires_equipment', eventData.requires_equipment ? 'true' : 'false');
+    if (eventData.chairs_qty !== undefined) {
+      formData.append('chairs_qty', eventData.chairs_qty.toString());
+    }
+    if (eventData.tables_qty !== undefined) {
+      formData.append('tables_qty', eventData.tables_qty.toString());
+    }
+    formData.append('projector', eventData.projector ? 'true' : 'false');
+    if (eventData.other_equipment) {
+      formData.append('other_equipment', eventData.other_equipment);
+    }
+    if (eventData.setup_start_time) {
+      formData.append('setup_start_time', eventData.setup_start_time);
+    }
+    if (eventData.setup_end_time) {
+      formData.append('setup_end_time', eventData.setup_end_time);
+    }
+    if (eventData.setup_hours !== undefined) {
+      formData.append('setup_hours', eventData.setup_hours.toString());
+    }
+    if (eventData.event_start_time) {
+      formData.append('event_start_time', eventData.event_start_time);
+    }
+    if (eventData.event_end_time) {
+      formData.append('event_end_time', eventData.event_end_time);
+    }
+    if (eventData.event_hours !== undefined) {
+      formData.append('event_hours', eventData.event_hours.toString());
+    }
+    if (eventData.cleanup_start_time) {
+      formData.append('cleanup_start_time', eventData.cleanup_start_time);
+    }
+    if (eventData.cleanup_end_time) {
+      formData.append('cleanup_end_time', eventData.cleanup_end_time);
+    }
+    if (eventData.cleanup_hours !== undefined) {
+      formData.append('cleanup_hours', eventData.cleanup_hours.toString());
+    }
+    if (eventData.total_hours !== undefined) {
+      formData.append('total_hours', eventData.total_hours.toString());
+    }
+    if (eventData.multi_day_schedule) {
+      formData.append('multi_day_schedule', eventData.multi_day_schedule);
+    }
+
+    const token = localStorage.getItem('adminToken');
     fetch('https://schedulink-backend.onrender.com/api/events', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newEvent)
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
     })
       .then(res => {
         if (!res.ok) throw new Error('Failed to add event');
@@ -100,7 +140,6 @@ export default function StudentDashboard() {
       })
       .then(data => {
         setShowAddModal(false);
-        alert('Event added successfully and is pending approval.');
       })
       .catch(err => {
         console.error('Failed to add event:', err);
@@ -125,7 +164,8 @@ export default function StudentDashboard() {
       });
 
       if (response.ok) {
-        alert('Report uploaded successfully!');
+        setSuccessMessage('Report uploaded successfully!');
+        setSuccessModalOpen(true);
         setSelectedFile(null);
         // Reset file input
         const fileInput = document.getElementById('file-input') as HTMLInputElement;
@@ -152,16 +192,7 @@ export default function StudentDashboard() {
     });
   };
 
-  const showToast = (message: string) => {
-    // Simple toast implementation
-    const toast = document.createElement('div');
-    toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    setTimeout(() => {
-      document.body.removeChild(toast);
-    }, 5000);
-  };
+
 
   return (
     <>
@@ -179,7 +210,7 @@ export default function StudentDashboard() {
           </button>
         </div>
 
-        <div className="flex-1 pt-16 md:pt-0 p-4 sm:p-8 md:p-8">
+        <div className="flex-1 pt-16 md:pt-0 p-4 sm:p-8 md:p-8 animate-fade-in">
           <div className="mb-8">
             <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-900 via-red-800 to-gray-900 bg-clip-text text-transparent mb-2">
               Student Dashboard
@@ -383,6 +414,12 @@ export default function StudentDashboard() {
 
         {showAddModal && <AddEventModal onClose={() => setShowAddModal(false)} onAdd={handleAddEvent} />}
       </div>
+
+      <SuccessNotificationModal
+        isOpen={successModalOpen}
+        message={successMessage}
+        onClose={() => setSuccessModalOpen(false)}
+      />
     </>
   );
 }

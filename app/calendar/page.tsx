@@ -5,7 +5,7 @@ import { useRole } from '../../components/RoleContext';
 import Sidebar from '../../components/Sidebar';
 import { useNotifications } from '../../context/NotificationsContext';
 import AddEventModal from '../events/AddEventModal';
-import EventDetailsModal from '../events/EventDetailsModal';
+import ViewEventModal from '../events/ViewEventModal';
 
 interface Event {
   id: number;
@@ -13,6 +13,8 @@ interface Event {
   description: string;
   start_date: string;
   end_date?: string;
+  venues: number[];
+  equipment: { id: number; quantity: number }[];
   gymnasium: boolean;
   sports_area: boolean;
   application_date: string;
@@ -22,6 +24,22 @@ interface Event {
   nature_of_event: string;
   status: string;
   created_at: string;
+  requires_equipment?: boolean;
+  chairs_qty?: number;
+  tables_qty?: number;
+  projector?: boolean;
+  other_equipment?: string;
+  setup_start_time?: string;
+  setup_end_time?: string;
+  setup_hours?: number;
+  event_start_time?: string;
+  event_end_time?: string;
+  event_hours?: number;
+  cleanup_start_time?: string;
+  cleanup_end_time?: string;
+  cleanup_hours?: number;
+  total_hours?: number;
+  multi_day_schedule?: string;
 }
 
 function getDaysInMonth(year: number, month: number) {
@@ -54,7 +72,12 @@ export default function CalendarPage() {
   }, [currentDate]);
 
   const fetchApprovedEvents = () => {
-    fetch('https://schedulink-backend.onrender.com/api/events?status=approved')
+    // No token needed for public calendar view - backend allows unauthenticated access to approved events
+    fetch('https://schedulink-backend.onrender.com/api/events?status=approved', {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
       .then(res => {
         if (res.ok) {
           return res.json();
@@ -181,11 +204,97 @@ export default function CalendarPage() {
   });
   console.log('eventRows length:', eventRows.length);
 
-  const handleAddEvent = (newEvent: { name: string; description: string; start_date: string; end_date?: string }) => {
+  const handleAddEvent = (newEvent: {
+    name: string;
+    description: string;
+    start_date: string;
+    end_date?: string;
+    venues: number[];
+    equipment: { id: number; quantity: number }[];
+    application_date: string;
+    rental_date: string;
+    behalf_of: string;
+    contact_info: string;
+    nature_of_event: string;
+    requires_equipment?: boolean;
+    chairs_qty?: number;
+    tables_qty?: number;
+    projector?: boolean;
+    other_equipment?: string;
+    setup_start_time?: string;
+    setup_end_time?: string;
+    setup_hours?: number;
+    event_start_time?: string;
+    event_end_time?: string;
+    event_hours?: number;
+    cleanup_start_time?: string;
+    cleanup_end_time?: string;
+    cleanup_hours?: number;
+    total_hours?: number;
+  }) => {
+    const formData = new FormData();
+    formData.append('name', newEvent.name);
+    formData.append('description', newEvent.description);
+    formData.append('start_date', newEvent.start_date);
+    if (newEvent.end_date) {
+      formData.append('end_date', newEvent.end_date);
+    }
+    formData.append('venues', JSON.stringify(newEvent.venues));
+    formData.append('equipment', JSON.stringify(newEvent.equipment));
+    formData.append('application_date', newEvent.application_date);
+    formData.append('rental_date', newEvent.rental_date);
+    formData.append('behalf_of', newEvent.behalf_of);
+    formData.append('contact_info', newEvent.contact_info);
+    formData.append('nature_of_event', newEvent.nature_of_event);
+    formData.append('requires_equipment', newEvent.requires_equipment ? 'true' : 'false');
+    if (newEvent.chairs_qty !== undefined) {
+      formData.append('chairs_qty', newEvent.chairs_qty.toString());
+    }
+    if (newEvent.tables_qty !== undefined) {
+      formData.append('tables_qty', newEvent.tables_qty.toString());
+    }
+    formData.append('projector', newEvent.projector ? 'true' : 'false');
+    if (newEvent.other_equipment) {
+      formData.append('other_equipment', newEvent.other_equipment);
+    }
+    if (newEvent.setup_start_time) {
+      formData.append('setup_start_time', newEvent.setup_start_time);
+    }
+    if (newEvent.setup_end_time) {
+      formData.append('setup_end_time', newEvent.setup_end_time);
+    }
+    if (newEvent.setup_hours !== undefined) {
+      formData.append('setup_hours', newEvent.setup_hours.toString());
+    }
+    if (newEvent.event_start_time) {
+      formData.append('event_start_time', newEvent.event_start_time);
+    }
+    if (newEvent.event_end_time) {
+      formData.append('event_end_time', newEvent.event_end_time);
+    }
+    if (newEvent.event_hours !== undefined) {
+      formData.append('event_hours', newEvent.event_hours.toString());
+    }
+    if (newEvent.cleanup_start_time) {
+      formData.append('cleanup_start_time', newEvent.cleanup_start_time);
+    }
+    if (newEvent.cleanup_end_time) {
+      formData.append('cleanup_end_time', newEvent.cleanup_end_time);
+    }
+    if (newEvent.cleanup_hours !== undefined) {
+      formData.append('cleanup_hours', newEvent.cleanup_hours.toString());
+    }
+    if (newEvent.total_hours !== undefined) {
+      formData.append('total_hours', newEvent.total_hours.toString());
+    }
+
+    const token = localStorage.getItem('adminToken');
     fetch('https://schedulink-backend.onrender.com/api/events', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newEvent)
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
     })
       .then(res => {
         if (!res.ok) {
@@ -234,7 +343,7 @@ export default function CalendarPage() {
         </button>
       </div>
 
-      <div className="flex-1 p-4 sm:p-8 relative z-10">
+      <div className="flex-1 p-4 sm:p-8 relative z-10 animate-fade-in">
         {/* Enhanced Header Section */}
         <div className="mb-10">
           <div className="flex items-center justify-between">
@@ -409,7 +518,7 @@ export default function CalendarPage() {
       )}
 
       {showDetailsModal && selectedEvent && (
-        <EventDetailsModal
+        <ViewEventModal
           event={selectedEvent}
           onClose={() => { setShowDetailsModal(false); setSelectedEvent(null); }}
         />

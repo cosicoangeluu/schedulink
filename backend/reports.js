@@ -3,6 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { pool } = require('./database');
+const { protect } = require('./authMiddleware');
 
 const router = express.Router();
 
@@ -28,7 +29,7 @@ const upload = multer({
   }
 });
 
-// POST /api/reports/upload - Upload a narrative report PDF
+// POST /api/reports/upload - Upload a narrative report PDF (no auth required for students)
 router.post('/upload', upload.single('report'), async (req, res) => {
   try {
     const { eventId, uploadedBy } = req.body;
@@ -53,8 +54,8 @@ router.post('/upload', upload.single('report'), async (req, res) => {
   }
 });
 
-// GET /api/reports - Get all reports with file details
-router.get('/', async (req, res) => {
+// GET /api/reports - Get all reports with file details (admin only)
+router.get('/', protect, async (req, res) => {
   try {
     // Query all reports with event names, including reports for deleted events
     const [reports] = await pool.execute(`
@@ -94,8 +95,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/reports/files - Get all uploaded files with event info
-router.get('/files', async (req, res) => {
+// GET /api/reports/files - Get all uploaded files with event info (admin only)
+router.get('/files', protect, async (req, res) => {
   try {
     // Query all reports with event names and file details, including reports for deleted events
     const [reports] = await pool.execute(`
@@ -135,8 +136,8 @@ router.get('/files', async (req, res) => {
   }
 });
 
-// GET /api/reports/file/:id - Serve the uploaded file
-router.get('/file/:id', async (req, res) => {
+// GET /api/reports/file/:id - Serve the uploaded file (admin only)
+router.get('/file/:id', protect, async (req, res) => {
   try {
     const { id } = req.params;
     const [rows] = await pool.execute('SELECT filePath FROM reports WHERE id = ?', [id]);
@@ -154,11 +155,58 @@ router.get('/file/:id', async (req, res) => {
   }
 });
 
-// GET /api/reports/sync - Sync existing files in uploads folder with database
-router.get('/sync', async (req, res) => {
+// DELETE /api/reports/:id - Delete a report and its file (admin only)
+router.delete('/:id', protect, async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log('Attempting to delete report with id:', id);
+
+    // Get the report details first
+    const [reports] = await pool.execute('SELECT filePath FROM reports WHERE id = ?', [id]);
+    if (reports.length === 0) {
+      console.log('Report not found in database');
+      return res.status(404).json({ error: 'Report not found' });
+    }
+
+    const report = reports[0];
+    const filePath = path.join(__dirname, report.filePath);
+    console.log('File path to delete:', filePath);
+
+    // Delete the physical file if it exists
+    try {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        console.log('Physical file deleted successfully');
+      } else {
+        console.log('Physical file does not exist');
+      }
+    } catch (fileError) {
+      console.error('Error deleting physical file:', fileError);
+      // Continue with database deletion even if file deletion fails
+    }
+
+    // Delete the report from database
+    const [deleteResult] = await pool.execute('DELETE FROM reports WHERE id = ?', [id]);
+    console.log('Database delete result:', deleteResult);
+
+    if (deleteResult.affectedRows === 0) {
+      console.log('No rows affected in database delete');
+      return res.status(500).json({ error: 'Failed to delete report from database' });
+    }
+
+    console.log('Report deleted successfully');
+    res.json({ message: 'Report deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting report:', error);
+    res.status(500).json({ error: 'Failed to delete report' });
+  }
+});
+
+// GET /api/reports/sync - Sync existing files in uploads folder with database (admin only)
+router.get('/sync', protect, async (req, res) => {
   try {
     const uploadsDir = path.join(__dirname, 'uploads');
-    
+
     // Check if uploads directory exists
     if (!fs.existsSync(uploadsDir)) {
       return res.status(404).json({ error: 'Uploads directory not found' });
@@ -166,11 +214,11 @@ router.get('/sync', async (req, res) => {
 
     // Read all files in uploads directory
     const files = fs.readdirSync(uploadsDir).filter(file => file.endsWith('.pdf'));
-    
+
     // Get all existing reports from database
     const [existingReports] = await pool.execute('SELECT filePath FROM reports');
     const existingPaths = existingReports.map(r => r.filePath);
-    
+
     // Find files that are not in database
     const orphanedFiles = files.filter(file => {
       const filePath = `uploads/${file}`;
@@ -178,18 +226,18 @@ router.get('/sync', async (req, res) => {
     });
 
     if (orphanedFiles.length === 0) {
-      return res.json({ 
-        message: 'All files are already synced', 
+      return res.json({
+        message: 'All files are already synced',
         syncedCount: 0,
-        totalFiles: files.length 
+        totalFiles: files.length
       });
     }
 
     // Get first event to associate orphaned files with
     const [events] = await pool.execute('SELECT id FROM events ORDER BY id ASC LIMIT 1');
-    
+
     if (events.length === 0) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'No events found in database. Please create an event first.',
         orphanedFiles: orphanedFiles.length
       });
@@ -212,8 +260,8 @@ router.get('/sync', async (req, res) => {
       }
     }
 
-    res.json({ 
-      message: `Successfully synced ${syncedCount} files`, 
+    res.json({
+      message: `Successfully synced ${syncedCount} files`,
       syncedCount,
       totalFiles: files.length,
       orphanedFiles: orphanedFiles.length
