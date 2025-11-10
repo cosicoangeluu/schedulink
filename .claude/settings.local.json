@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Bash(node -c:*)",
+      "Bash(npx tsc:*)",
+      "Bash(dir:*)",
+      "Bash(nul)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(test:*)",
+      "Bash(npm run dev:*)",
+      "Bash(git checkout:*)",
+      "Bash(node:*)",
+      "Bash(npm start)",
+      "Bash(timeout 3 bash:*)",
+      "Bash(del .env.local)",
+      "Bash(del libapi.ts)",
+      "Bash(npm test:*)",
+      "Bash(npm install:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

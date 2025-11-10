@@ -1,275 +1,380 @@
 const express = require('express');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-const { pool } = require('./database');
-const { protect } = require('./authMiddleware');
-
 const router = express.Router();
+const { pool } = require('./database.js');
+const { protect: authenticateToken } = require('./authMiddleware');
+const multer = require('multer');
+const { cloudinary } = require('./cloudinary');
 
-// Configure multer for PDF uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Use global fetch if available (Node 18+), otherwise use node-fetch v2
+const fetch = globalThis.fetch || require('node-fetch');
 
+// Use memory storage for multer to avoid saving to disk before uploading to Cloudinary
+const storage = multer.memoryStorage();
+
+// Configure multer with file size limit and file type validation
 const upload = multer({
-  storage: storage,
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/pdf') {
-      cb(null, true);
-    } else {
-      cb(new Error('Only PDF files are allowed!'), false);
-    }
-  }
-});
-
-// POST /api/reports/upload - Upload a narrative report PDF (no auth required for students)
-router.post('/upload', upload.single('report'), async (req, res) => {
-  try {
-    const { eventId, uploadedBy } = req.body;
-    const filePath = req.file.path;
-
-    if (!eventId || !uploadedBy) {
-      return res.status(400).json({ error: 'eventId and uploadedBy are required' });
-    }
-
-    const [result] = await pool.execute(
-      'INSERT INTO reports (eventId, filePath, uploadedBy) VALUES (?, ?, ?)',
-      [eventId, filePath, uploadedBy]
-    );
-
-    res.status(201).json({
-      message: 'Report uploaded successfully',
-      reportId: result.insertId
-    });
-  } catch (error) {
-    console.error('Error uploading report:', error);
-    res.status(500).json({ error: 'Failed to upload report' });
-  }
-});
-
-// GET /api/reports - Get all reports with file details (admin only)
-router.get('/', protect, async (req, res) => {
-  try {
-    // Query all reports with event names, including reports for deleted events
-    const [reports] = await pool.execute(`
-      SELECT r.id, r.eventId, r.filePath, r.uploadedBy, r.uploadedAt, COALESCE(e.name, 'Event Deleted') as eventName, COALESCE(e.id, r.eventId) as eventId
-      FROM reports r
-      LEFT JOIN events e ON r.eventId = e.id
-      ORDER BY r.uploadedAt DESC
-    `);
-
-    // Add file size and check if file exists
-    const reportsWithDetails = reports.map(report => {
-      const filePath = path.join(__dirname, report.filePath);
-      let fileSize = 0;
-      let exists = false;
-      try {
-        if (fs.existsSync(filePath)) {
-          const stats = fs.statSync(filePath);
-          fileSize = stats.size;
-          exists = true;
+    storage: storage,
+    limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB limit
+    },
+    fileFilter: (req, file, cb) => {
+        // Accept only PDF files
+        if (file.mimetype === 'application/pdf') {
+            cb(null, true);
+        } else {
+            cb(new Error('Only PDF files are allowed!'), false);
         }
-      } catch (error) {
-        console.error('Error checking file:', error);
-      }
-
-      return {
-        ...report,
-        fileName: path.basename(report.filePath),
-        fileSize,
-        exists
-      };
-    });
-
-    res.json(reportsWithDetails);
-  } catch (error) {
-    console.error('Error fetching reports:', error);
-    res.status(500).json({ error: 'Failed to fetch reports' });
-  }
+    }
 });
 
-// GET /api/reports/files - Get all uploaded files with event info (admin only)
-router.get('/files', protect, async (req, res) => {
-  try {
-    // Query all reports with event names and file details, including reports for deleted events
-    const [reports] = await pool.execute(`
-      SELECT r.id, r.filePath, r.uploadedBy, r.uploadedAt, COALESCE(e.name, 'Event Deleted') as eventName, COALESCE(e.id, r.eventId) as eventId
-      FROM reports r
-      LEFT JOIN events e ON r.eventId = e.id
-      ORDER BY r.uploadedAt DESC
-    `);
-
-    // Add file size and check if file exists
-    const filesWithDetails = reports.map(report => {
-      const filePath = path.join(__dirname, report.filePath);
-      let fileSize = 0;
-      let exists = false;
-      try {
-        if (fs.existsSync(filePath)) {
-          const stats = fs.statSync(filePath);
-          fileSize = stats.size;
-          exists = true;
+/**
+ * @route   POST /api/reports/upload
+ * @desc    Upload a report for a specific event
+ * @access  Public (Student/Admin)
+ */
+router.post('/upload', (req, res) => {
+    upload.single('report')(req, res, async (err) => {
+        // Handle multer errors (file size, file type, etc.)
+        if (err instanceof multer.MulterError) {
+            console.error('Multer error:', err);
+            if (err.code === 'LIMIT_FILE_SIZE') {
+                return res.status(400).json({ error: 'File size exceeds 10MB limit.' });
+            }
+            return res.status(400).json({ error: `Upload error: ${err.message}` });
+        } else if (err) {
+            console.error('File filter error:', err);
+            return res.status(400).json({ error: err.message });
         }
-      } catch (error) {
-        console.error('Error checking file:', error);
-      }
 
-      return {
-        ...report,
-        fileName: path.basename(report.filePath),
-        fileSize,
-        exists
-      };
-    });
+        try {
+            console.log('Upload request received');
+            console.log('File:', req.file ? `${req.file.originalname} (${req.file.size} bytes, ${req.file.mimetype})` : 'No file');
+            console.log('Body:', req.body);
 
-    res.json(filesWithDetails);
-  } catch (error) {
-    console.error('Error fetching files:', error);
-    res.status(500).json({ error: 'Failed to fetch files' });
-  }
-});
+            if (!req.file) {
+                return res.status(400).json({ error: 'No file uploaded. Please select a PDF file.' });
+            }
 
-// GET /api/reports/file/:id - Serve the uploaded file (admin only)
-router.get('/file/:id', protect, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const [rows] = await pool.execute('SELECT filePath FROM reports WHERE id = ?', [id]);
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'Report not found' });
-    }
-    const filePath = path.join(__dirname, rows[0].filePath);
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: 'File not found' });
-    }
-    res.sendFile(filePath);
-  } catch (error) {
-    console.error('Error serving file:', error);
-    res.status(500).json({ error: 'Failed to serve file' });
-  }
-});
+            const eventId = parseInt(req.body.eventId, 10);
+            const uploadedBy = req.body.uploadedBy;
 
-// DELETE /api/reports/:id - Delete a report and its file (admin only)
-router.delete('/:id', protect, async (req, res) => {
-  try {
-    const { id } = req.params;
-    console.log('Attempting to delete report with id:', id);
+            if (!eventId || !uploadedBy) {
+                console.error('Missing required fields:', { eventId, uploadedBy });
+                return res.status(400).json({ error: 'Missing eventId or uploadedBy' });
+            }
 
-    // Get the report details first
-    const [reports] = await pool.execute('SELECT filePath FROM reports WHERE id = ?', [id]);
-    if (reports.length === 0) {
-      console.log('Report not found in database');
-      return res.status(404).json({ error: 'Report not found' });
-    }
+        // Check if event exists
+        const [eventResult] = await pool.execute('SELECT * FROM events WHERE id = ?', [eventId]);
+        if (!eventResult || eventResult.length === 0) {
+            console.error('Event not found:', eventId);
+            return res.status(404).json({ error: 'Event not found.' });
+        }
 
-    const report = reports[0];
-    const filePath = path.join(__dirname, report.filePath);
-    console.log('File path to delete:', filePath);
+        console.log('Uploading to Cloudinary...');
 
-    // Delete the physical file if it exists
-    try {
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-        console.log('Physical file deleted successfully');
-      } else {
-        console.log('Physical file does not exist');
-      }
-    } catch (fileError) {
-      console.error('Error deleting physical file:', fileError);
-      // Continue with database deletion even if file deletion fails
-    }
+        // Upload to Cloudinary using buffer directly
+        const result = await new Promise((resolve, reject) => {
+            const stream = cloudinary.uploader.upload_stream(
+                { resource_type: 'raw', folder: 'reports' },
+                (error, result) => {
+                    if (error) {
+                        console.error('Cloudinary upload error:', error);
+                        reject(error);
+                    } else {
+                        console.log('Cloudinary upload successful:', result.public_id);
+                        resolve(result);
+                    }
+                }
+            );
 
-    // Delete the report from database
-    const [deleteResult] = await pool.execute('DELETE FROM reports WHERE id = ?', [id]);
-    console.log('Database delete result:', deleteResult);
+            // Write the buffer to the stream and end it
+            stream.end(req.file.buffer);
+        });
 
-    if (deleteResult.affectedRows === 0) {
-      console.log('No rows affected in database delete');
-      return res.status(500).json({ error: 'Failed to delete report from database' });
-    }
+        // Save report metadata to database
+        const { secure_url } = result;
+        const fileName = req.file.originalname;
 
-    console.log('Report deleted successfully');
-    res.json({ message: 'Report deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting report:', error);
-    res.status(500).json({ error: 'Failed to delete report' });
-  }
-});
+        console.log('Saving to database...');
 
-// GET /api/reports/sync - Sync existing files in uploads folder with database (admin only)
-router.get('/sync', protect, async (req, res) => {
-  try {
-    const uploadsDir = path.join(__dirname, 'uploads');
-
-    // Check if uploads directory exists
-    if (!fs.existsSync(uploadsDir)) {
-      return res.status(404).json({ error: 'Uploads directory not found' });
-    }
-
-    // Read all files in uploads directory
-    const files = fs.readdirSync(uploadsDir).filter(file => file.endsWith('.pdf'));
-
-    // Get all existing reports from database
-    const [existingReports] = await pool.execute('SELECT filePath FROM reports');
-    const existingPaths = existingReports.map(r => r.filePath);
-
-    // Find files that are not in database
-    const orphanedFiles = files.filter(file => {
-      const filePath = `uploads/${file}`;
-      return !existingPaths.includes(filePath);
-    });
-
-    if (orphanedFiles.length === 0) {
-      return res.json({
-        message: 'All files are already synced',
-        syncedCount: 0,
-        totalFiles: files.length
-      });
-    }
-
-    // Get first event to associate orphaned files with
-    const [events] = await pool.execute('SELECT id FROM events ORDER BY id ASC LIMIT 1');
-
-    if (events.length === 0) {
-      return res.status(400).json({
-        error: 'No events found in database. Please create an event first.',
-        orphanedFiles: orphanedFiles.length
-      });
-    }
-
-    const defaultEventId = events[0].id;
-    let syncedCount = 0;
-
-    // Insert orphaned files into database
-    for (const file of orphanedFiles) {
-      const filePath = `uploads/${file}`;
-      try {
-        await pool.execute(
-          'INSERT INTO reports (eventId, filePath, uploadedBy) VALUES (?, ?, ?)',
-          [defaultEventId, filePath, 'system']
+        const [insertResult] = await pool.execute(
+            'INSERT INTO reports (eventId, filePath, fileName, uploadedBy, uploadedAt) VALUES (?, ?, ?, ?, NOW())',
+            [eventId, secure_url, fileName, uploadedBy]
         );
-        syncedCount++;
-      } catch (error) {
-        console.error(`Error syncing file ${file}:`, error);
-      }
+
+        console.log('Report saved successfully with ID:', insertResult.insertId);
+
+        res.status(201).json({
+            message: 'Report uploaded successfully',
+            report: {
+                id: insertResult.insertId,
+                eventId: eventId,
+                fileName: fileName,
+                filePath: secure_url,
+                uploadedBy: uploadedBy,
+            },
+        });
+        } catch (error) {
+            console.error('Error uploading report:', error);
+            res.status(500).json({ error: 'Server error', details: error.message });
+        }
+    });
+});
+
+/**
+ * @route   GET /api/reports
+ * @desc    Get all reports
+ * @access  Public (Admin)
+ */
+router.get('/', async (req, res) => {
+    try {
+        const [reports] = await pool.execute(`
+            SELECT
+                r.id,
+                r.eventId,
+                r.filePath,
+                r.fileName,
+                r.uploadedBy,
+                r.uploadedAt,
+                e.name as eventName,
+                0 as fileSize,
+                1 as \`exists\`
+            FROM reports r
+            LEFT JOIN events e ON r.eventId = e.id
+            ORDER BY r.uploadedAt DESC
+        `);
+        res.json(reports);
+    } catch (error) {
+        console.error('Error fetching reports:', error);
+        res.status(500).send('Server error');
+    }
+});
+
+/**
+ * @route   GET /api/reports/debug/:id
+ * @desc    Debug endpoint to check file info without downloading
+ * @access  Public
+ */
+router.get('/debug/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        console.log('Debug: Checking report file with ID:', id);
+
+        const [reportResult] = await pool.execute('SELECT * FROM reports WHERE id = ?', [id]);
+        if (reportResult.length === 0) {
+            return res.json({ error: 'Report not found in database', id });
+        }
+
+        const report = reportResult[0];
+        console.log('Debug: Report data:', report);
+
+        // Try to fetch from Cloudinary
+        if (report.filePath) {
+            try {
+                const response = await fetch(report.filePath);
+                const cloudinaryStatus = {
+                    url: report.filePath,
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: Object.fromEntries(response.headers.entries()),
+                    ok: response.ok
+                };
+                console.log('Debug: Cloudinary status:', cloudinaryStatus);
+                return res.json({
+                    report,
+                    cloudinary: cloudinaryStatus,
+                    fetchAvailable: typeof fetch !== 'undefined',
+                    nodeVersion: process.version
+                });
+            } catch (fetchError) {
+                return res.json({
+                    report,
+                    cloudinary: { error: fetchError.message, stack: fetchError.stack },
+                    fetchAvailable: typeof fetch !== 'undefined',
+                    nodeVersion: process.version
+                });
+            }
+        } else {
+            return res.json({ report, error: 'No filePath in database' });
+        }
+    } catch (error) {
+        console.error('Debug error:', error);
+        res.json({ error: error.message, stack: error.stack, nodeVersion: process.version });
+    }
+});
+
+/**
+ * @route   GET /api/reports/download/:id
+ * @desc    Download a report file (forces download)
+ * @access  Public (Admin)
+ */
+router.get('/download/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        console.log('Downloading report file with ID:', id);
+
+        const [reportResult] = await pool.execute('SELECT filePath, fileName FROM reports WHERE id = ?', [id]);
+        if (reportResult.length === 0) {
+            console.error('Report not found in database:', id);
+            return res.status(404).json({ error: 'Report not found.' });
+        }
+
+        const { filePath, fileName } = reportResult[0];
+        console.log('Cloudinary file path:', filePath);
+
+        if (!filePath) {
+            console.error('File path is null or undefined');
+            return res.status(404).json({ error: 'File path not found in database.' });
+        }
+
+        // Fetch the file from Cloudinary
+        console.log('Fetching file from Cloudinary for download...');
+        const response = await fetch(filePath);
+        console.log('Cloudinary response status:', response.status, response.statusText);
+
+        if (!response.ok) {
+            console.error('Cloudinary fetch failed:', response.status, response.statusText);
+            const errorText = await response.text().catch(() => 'Unable to read error');
+            console.error('Cloudinary error response:', errorText);
+            return res.status(404).json({ error: `File not found on Cloudinary. Status: ${response.status}` });
+        }
+
+        // Convert to Buffer
+        let buffer;
+        if (response.buffer && typeof response.buffer === 'function') {
+            buffer = await response.buffer();
+        } else {
+            const arrayBuffer = await response.arrayBuffer();
+            buffer = Buffer.from(arrayBuffer);
+        }
+
+        console.log('File fetched successfully. Size:', buffer.length, 'bytes');
+
+        // Use attachment to force download
+        const downloadFileName = fileName || 'report.pdf';
+        res.set('Content-Type', 'application/pdf');
+        res.set('Content-Length', buffer.length.toString());
+        res.set('Content-Disposition', `attachment; filename="${downloadFileName}"`);
+        res.set('Cache-Control', 'public, max-age=31536000');
+
+        res.send(buffer);
+    } catch (error) {
+        console.error('Error downloading report file:', error);
+        console.error('Error message:', error.message);
+        res.status(500).json({
+            error: 'Server error',
+            details: error.message,
+            errorType: error.name
+        });
+    }
+});
+
+/**
+ * @route   GET /api/reports/file/:id
+ * @desc    Get a report file
+ * @access  Public (Admin)
+ */
+router.get('/file/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        console.log('Fetching report file with ID:', id);
+
+        const [reportResult] = await pool.execute('SELECT filePath FROM reports WHERE id = ?', [id]);
+        if (reportResult.length === 0) {
+            console.error('Report not found in database:', id);
+            return res.status(404).json({ error: 'Report not found.' });
+        }
+
+        const { filePath } = reportResult[0];
+        console.log('Cloudinary file path:', filePath);
+
+        // Validate that filePath exists
+        if (!filePath) {
+            console.error('File path is null or undefined');
+            return res.status(404).json({ error: 'File path not found in database.' });
+        }
+
+        // Fetch the file from Cloudinary
+        console.log('Fetching file from Cloudinary...');
+        const response = await fetch(filePath);
+        console.log('Cloudinary response status:', response.status, response.statusText);
+
+        if (!response.ok) {
+            console.error('Cloudinary fetch failed:', response.status, response.statusText);
+            const errorText = await response.text().catch(() => 'Unable to read error');
+            console.error('Cloudinary error response:', errorText);
+            return res.status(404).json({ error: `File not found on Cloudinary. Status: ${response.status}` });
+        }
+
+        // Convert to Buffer (works with both global fetch and node-fetch)
+        console.log('Converting file to buffer...');
+        let buffer;
+        if (response.buffer && typeof response.buffer === 'function') {
+            // node-fetch v2 has .buffer() method
+            console.log('Using node-fetch .buffer() method');
+            buffer = await response.buffer();
+        } else {
+            // global fetch (Node 18+) uses .arrayBuffer()
+            console.log('Using global fetch .arrayBuffer() method');
+            const arrayBuffer = await response.arrayBuffer();
+            buffer = Buffer.from(arrayBuffer);
+        }
+
+        console.log('File fetched successfully. Size:', buffer.length, 'bytes');
+
+        // Force PDF content type since we only allow PDF uploads
+        // Cloudinary serves raw files as application/octet-stream
+        res.set('Content-Type', 'application/pdf');
+        res.set('Content-Length', buffer.length.toString());
+        res.set('Content-Disposition', 'inline; filename="report.pdf"');
+        res.set('Accept-Ranges', 'bytes');
+        res.set('Cache-Control', 'public, max-age=31536000');
+
+        res.send(buffer);
+    } catch (error) {
+        console.error('Error fetching report file:', error);
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        res.status(500).json({
+            error: 'Server error',
+            details: error.message,
+            errorType: error.name,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
+    }
+});
+
+/**
+ * @route   DELETE /api/reports/:id
+ * @desc    Delete a report
+ * @access  Private (Admin)
+ */
+router.delete('/:id', authenticateToken, async (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Access denied.' });
     }
 
-    res.json({
-      message: `Successfully synced ${syncedCount} files`,
-      syncedCount,
-      totalFiles: files.length,
-      orphanedFiles: orphanedFiles.length
-    });
-  } catch (error) {
-    console.error('Error syncing files:', error);
-    res.status(500).json({ error: 'Failed to sync files' });
-  }
+    const { id } = req.params;
+
+    try {
+        // Get report to find its filePath
+        const [reportResult] = await pool.execute('SELECT filePath FROM reports WHERE id = ?', [id]);
+        if (reportResult.length === 0) {
+            return res.status(404).json({ error: 'Report not found.' });
+        }
+
+        // Delete from database
+        await pool.execute('DELETE FROM reports WHERE id = ?', [id]);
+
+        res.json({ message: 'Report deleted successfully.' });
+    } catch (error) {
+        console.error('Error deleting report:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
 });
 
 module.exports = router;

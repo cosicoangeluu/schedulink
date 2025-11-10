@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import Sidebar from '../../components/Sidebar';
+import EditEventModal from './EditEventModal';
 import EventCard from './EventCard';
 
 interface Event {
@@ -46,6 +48,10 @@ export default function EventsPage() {
   const [selectedDate, setSelectedDate] = useState('');
   const [eventList, setEventList] = useState<Event[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedEventForEdit, setSelectedEventForEdit] = useState<Event | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedEventForDelete, setSelectedEventForDelete] = useState<Event | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('adminToken');
@@ -83,26 +89,29 @@ export default function EventsPage() {
     return matchesSearch && matchesDate && isApproved;
   });
 
-  const handleDeleteEvent = (eventId: number) => {
+  const handleDeleteEvent = async (eventId: number) => {
     const token = localStorage.getItem('adminToken');
-    fetch(`https://schedulink-backend.onrender.com/api/events/${eventId}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    })
-      .then(res => {
-        if (res.ok) {
-          setEventList(prev => prev.filter(event => event.id !== eventId));
-        } else {
-          console.error('Failed to delete event');
+    try {
+      const res = await fetch(`https://schedulink-backend.onrender.com/api/events/${eventId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
-      })
-      .catch(err => console.error('Failed to delete event:', err));
+      });
+
+      if (res.ok) {
+        setEventList(prev => prev.filter(event => event.id !== eventId));
+      } else {
+        throw new Error('Failed to delete event');
+      }
+    } catch (err) {
+      console.error('Failed to delete event:', err);
+      throw err; // Re-throw to allow error handling in the component
+    }
   };
 
-  const handleAddEvent = (eventData: { name: string; description: string; start_date: string; end_date?: string; venues: number[]; equipment: {id: number, quantity: number}[]; application_date: string; rental_date: string; behalf_of: string; contact_info: string; nature_of_event: string; requires_equipment?: boolean; chairs_qty?: number; tables_qty?: number; projector?: boolean; other_equipment?: string; setup_start_time?: string; setup_end_time?: string; setup_hours?: number; event_start_time?: string; event_end_time?: string; event_hours?: number; cleanup_start_time?: string; cleanup_end_time?: string; cleanup_hours?: number; total_hours?: number; multi_day_schedule?: File }) => {
+  const handleAddEvent = async (eventData: { name: string; description: string; start_date: string; end_date?: string; venues: number[]; equipment: {id: number, quantity: number}[]; application_date: string; rental_date: string; behalf_of: string; contact_info: string; nature_of_event: string; requires_equipment?: boolean; chairs_qty?: number; tables_qty?: number; projector?: boolean; other_equipment?: string; setup_start_time?: string; setup_end_time?: string; setup_hours?: number; event_start_time?: string; event_end_time?: string; event_hours?: number; cleanup_start_time?: string; cleanup_end_time?: string; cleanup_hours?: number; total_hours?: number; multi_day_schedule?: File }) => {
     const formData = new FormData();
 
     // Add all fields to FormData
@@ -119,21 +128,28 @@ export default function EventsPage() {
     });
 
     const token = localStorage.getItem('adminToken');
-    fetch('https://schedulink-backend.onrender.com/api/events', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      },
-      body: formData
-    })
-      .then(res => res.json())
-      .then(data => {
-        setEventList(prev => [...prev, data]);
-      })
-      .catch(err => console.error('Failed to add event:', err));
+    try {
+      const res = await fetch('https://schedulink-backend.onrender.com/api/events', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to add event');
+      }
+
+      const data = await res.json();
+      setEventList(prev => [...prev, data]);
+    } catch (err) {
+      console.error('Failed to add event:', err);
+      throw err;
+    }
   };
 
-  const handleEditEvent = (eventId: number, updatedEvent: { name: string; description: string; start_date: string; end_date?: string; venues: number[]; equipment: {id: number, quantity: number}[]; application_date: string; rental_date: string; behalf_of: string; contact_info: string; nature_of_event: string; requires_equipment?: boolean; chairs_qty?: number; tables_qty?: number; projector?: boolean; other_equipment?: string; setup_start_time?: string; setup_end_time?: string; setup_hours?: number; event_start_time?: string; event_end_time?: string; event_hours?: number; cleanup_start_time?: string; cleanup_end_time?: string; cleanup_hours?: number; total_hours?: number; multi_day_schedule?: string | File }) => {
+  const handleEditEvent = async (eventId: number, updatedEvent: { name: string; description: string; start_date: string; end_date?: string; venues: number[]; equipment: {id: number, quantity: number}[]; application_date: string; rental_date: string; behalf_of: string; contact_info: string; nature_of_event: string; requires_equipment?: boolean; chairs_qty?: number; tables_qty?: number; projector?: boolean; other_equipment?: string; setup_start_time?: string; setup_end_time?: string; setup_hours?: number; event_start_time?: string; event_end_time?: string; event_hours?: number; cleanup_start_time?: string; cleanup_end_time?: string; cleanup_hours?: number; total_hours?: number; multi_day_schedule?: string | File }) => {
     const formData = new FormData();
 
     // Add all fields to FormData
@@ -150,18 +166,59 @@ export default function EventsPage() {
     });
 
     const token = localStorage.getItem('adminToken');
-    fetch(`https://schedulink-backend.onrender.com/api/events/${eventId}`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      },
-      body: formData
-    })
-      .then(res => res.json())
-      .then(data => {
-        setEventList(prev => prev.map(event => event.id === eventId ? { ...event, ...data } : event));
-      })
-      .catch(err => console.error('Failed to edit event:', err));
+    try {
+      const res = await fetch(`https://schedulink-backend.onrender.com/api/events/${eventId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to edit event');
+      }
+
+      const data = await res.json();
+      setEventList(prev => prev.map(event => event.id === eventId ? { ...event, ...data } : event));
+      setShowEditModal(false);
+      setSelectedEventForEdit(null);
+    } catch (err) {
+      console.error('Failed to edit event:', err);
+      throw err;
+    }
+  };
+
+  const handleOpenEditModal = (event: Event) => {
+    setSelectedEventForEdit(event);
+    setShowEditModal(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setSelectedEventForEdit(null);
+  };
+
+  const handleOpenDeleteModal = (event: Event) => {
+    setSelectedEventForDelete(event);
+    setShowDeleteModal(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setShowDeleteModal(false);
+    setSelectedEventForDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (selectedEventForDelete) {
+      try {
+        await handleDeleteEvent(selectedEventForDelete.id);
+        setShowDeleteModal(false);
+        setSelectedEventForDelete(null);
+      } catch (err) {
+        // Error handling is done in handleDeleteEvent
+      }
+    }
   };
 
 
@@ -295,7 +352,7 @@ export default function EventsPage() {
         </div>
 
         {/* Events Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 ${showEditModal || showDeleteModal ? 'pointer-events-none opacity-50' : ''}`}>
           {filteredEvents.map((event, index) => (
             <div
               key={event.id}
@@ -304,8 +361,8 @@ export default function EventsPage() {
             >
               <EventCard
                 event={event}
-                onDelete={handleDeleteEvent}
-                onEdit={handleEditEvent}
+                onDelete={handleOpenDeleteModal}
+                onEdit={handleOpenEditModal}
               />
             </div>
           ))}
@@ -337,6 +394,26 @@ export default function EventsPage() {
               </button>
             )}
           </div>
+        )}
+
+        {/* Edit Modal */}
+        {showEditModal && selectedEventForEdit && (
+          <EditEventModal
+            event={selectedEventForEdit}
+            onClose={handleCloseEditModal}
+            onSave={handleEditEvent}
+          />
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteModal && selectedEventForDelete && (
+          <DeleteConfirmationModal
+            isOpen={showDeleteModal}
+            message={`Are you sure you want to delete the event "${selectedEventForDelete.name}"? This action cannot be undone.`}
+            onConfirm={handleConfirmDelete}
+            onCancel={handleCloseDeleteModal}
+            isLoading={false}
+          />
         )}
       </div>
     </div>

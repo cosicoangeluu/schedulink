@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Sidebar from '../../components/Sidebar';
+import SuccessNotificationModal from '../../components/SuccessNotificationModal';
 import AddResourceModal from './AddResourceModal';
 import EditResourceModal from './EditResourceModal';
 import EventCard from './EventCard';

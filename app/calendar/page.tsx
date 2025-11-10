@@ -204,7 +204,7 @@ export default function CalendarPage() {
   });
   console.log('eventRows length:', eventRows.length);
 
-  const handleAddEvent = (newEvent: {
+  const handleAddEvent = async (newEvent: {
     name: string;
     description: string;
     start_date: string;
@@ -448,11 +448,44 @@ export default function CalendarPage() {
                   <div className="space-y-1">
                     {eventsOnDay.slice(0, 3).map((event, idx) => {
                       const eventColor = getEventColor(event.id);
-                      const eventTime = new Date(event.start_date).toLocaleTimeString('en-US', {
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        hour12: true
-                      });
+                      // Use event_start_time if available, otherwise use start_date time
+                      let eventTime = 'TBD';
+                      if (event.event_start_time) {
+                        // event_start_time is in HH:MM:SS format
+                        const [hours, minutes] = event.event_start_time.split(':');
+                        const hour = parseInt(hours);
+                        const isPM = hour >= 12;
+                        const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+                        const period = isPM ? 'PM' : 'AM';
+                        eventTime = `${displayHour}:${minutes} ${period}`;
+                      } else if (event.start_date) {
+                        // Fallback to start_date time - parse directly to avoid timezone issues
+                        // start_date format: "2025-08-11T07:00:00" or "2025-08-11 07:00:00"
+                        const dateStr = event.start_date.toString();
+                        // Extract time from ISO format or MySQL datetime format
+                        let hour = 0;
+                        let minutes = 0;
+
+                        // Try ISO format: 2025-08-11T07:00:00
+                        const isoMatch = dateStr.match(/T(\d{2}):(\d{2})/);
+                        if (isoMatch) {
+                          hour = parseInt(isoMatch[1]);
+                          minutes = parseInt(isoMatch[2]);
+                        } else {
+                          // Try MySQL format: 2025-08-11 07:00:00
+                          const mysqlMatch = dateStr.match(/\s(\d{2}):(\d{2})/);
+                          if (mysqlMatch) {
+                            hour = parseInt(mysqlMatch[1]);
+                            minutes = parseInt(mysqlMatch[2]);
+                          }
+                        }
+
+                        const isPM = hour >= 12;
+                        const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+                        const period = isPM ? 'PM' : 'AM';
+                        const minutesStr = minutes.toString().padStart(2, '0');
+                        eventTime = `${displayHour}:${minutesStr} ${period}`;
+                      }
 
                       return (
                         <div

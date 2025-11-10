@@ -28,8 +28,18 @@ export default function ChartSection() {
 
   const fetchChartData = async () => {
     try {
+      // Get auth token for admin
+      const token = localStorage.getItem('adminToken');
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json'
+      };
+
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       // Fetch events
-      const eventsRes = await fetch('https://schedulink-backend.onrender.com/api/events');
+      const eventsRes = await fetch('https://schedulink-backend.onrender.com/api/events', { headers });
 
       const eventsData = await eventsRes.json();
 
@@ -78,8 +88,8 @@ export default function ChartSection() {
         const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0);
 
         const monthEvents = events.filter(e => {
-          const eventDate = new Date(e.created_at);
-          return eventDate >= monthStart && eventDate <= monthEnd;
+          const eventDate = new Date(e.start_date);
+          return eventDate >= monthStart && eventDate <= monthEnd && e.status === 'approved';
         }).length;
 
         trendData.push({

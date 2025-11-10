@@ -165,14 +165,22 @@ export function useEventForm({ initialData = {}, isEdit = false }: UseEventFormP
     const cleanupHours = computeHours(formData.cleanup_start_time, formData.cleanup_end_time);
     const totalHours = setupHours + eventHours + cleanupHours;
 
-    setFormData(prev => ({
-      ...prev,
-      setup_hours: setupHours,
-      event_hours: eventHours,
-      cleanup_hours: cleanupHours,
-      total_hours: totalHours
-    }));
-  }, [formData.setup_start_time, formData.setup_end_time, formData.event_start_time, formData.event_end_time, formData.cleanup_start_time, formData.cleanup_end_time]);
+    // Only update if values have actually changed to prevent infinite loop
+    if (
+      formData.setup_hours !== setupHours ||
+      formData.event_hours !== eventHours ||
+      formData.cleanup_hours !== cleanupHours ||
+      formData.total_hours !== totalHours
+    ) {
+      setFormData(prev => ({
+        ...prev,
+        setup_hours: setupHours,
+        event_hours: eventHours,
+        cleanup_hours: cleanupHours,
+        total_hours: totalHours
+      }));
+    }
+  }, [formData.setup_start_time, formData.setup_end_time, formData.event_start_time, formData.event_end_time, formData.cleanup_start_time, formData.cleanup_end_time, formData.setup_hours, formData.event_hours, formData.cleanup_hours, formData.total_hours]);
 
   return {
     formData,

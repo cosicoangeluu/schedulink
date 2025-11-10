@@ -107,6 +107,24 @@ export default function ReportsPage() {
     e.preventDefault();
     if (!selectedFile || !role) return;
 
+    // Client-side validation
+    if (selectedFile.type !== 'application/pdf') {
+      alert('Please select a PDF file only.');
+      return;
+    }
+
+    // Check file size (10MB limit)
+    const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+    if (selectedFile.size > maxSize) {
+      alert('File size exceeds 10MB limit. Please select a smaller file.');
+      return;
+    }
+
+    if (!selectedEventId || selectedEventId === 0) {
+      alert('Please select an event.');
+      return;
+    }
+
     setUploading(true);
     const formData = new FormData();
     formData.append('report', selectedFile);
@@ -114,6 +132,8 @@ export default function ReportsPage() {
     formData.append('uploadedBy', role);
 
     try {
+      console.log('Uploading file:', selectedFile.name, 'Size:', selectedFile.size, 'Type:', selectedFile.type);
+
       const response = await fetch('https://schedulink-backend.onrender.com/api/reports/upload', {
         method: 'POST',
         body: formData,
@@ -121,6 +141,7 @@ export default function ReportsPage() {
 
       if (response.ok) {
         const result = await response.json();
+        console.log('Upload successful:', result);
         setSuccessMessage('Report uploaded successfully!');
         setSuccessModalOpen(true);
         setSelectedFile(null);
@@ -130,11 +151,12 @@ export default function ReportsPage() {
         fetchUploadedFiles();
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Upload failed:', errorData);
         alert(`Failed to upload report: ${errorData.error || 'Please try again'}`);
       }
     } catch (error) {
       console.error('Error uploading report:', error);
-      alert('Error uploading report');
+      alert('Error uploading report. Please check your internet connection and try again.');
     } finally {
       setUploading(false);
     }
@@ -166,6 +188,53 @@ export default function ReportsPage() {
     } catch (error) {
       console.error('Error deleting report:', error);
       alert('Error deleting report');
+    }
+  };
+
+  const handleViewFile = async (fileId: number, fileName: string) => {
+    try {
+      console.log('Attempting to view file:', fileId, fileName);
+
+      // Simply open the file URL directly in a new tab
+      // The backend serves it with proper PDF headers
+      const fileUrl = `https://schedulink-backend.onrender.com/api/reports/file/${fileId}`;
+      const newWindow = window.open(fileUrl, '_blank');
+
+      if (!newWindow) {
+        alert('Please allow popups to view the PDF');
+      }
+    } catch (error) {
+      console.error('Error viewing file:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Error viewing file: ${errorMessage}`);
+    }
+  };
+
+  const handleDownloadFile = async (fileId: number, fileName: string) => {
+    try {
+      console.log('Attempting to download file:', fileId, fileName);
+
+      // Use the download endpoint which forces attachment
+      const downloadUrl = `https://schedulink-backend.onrender.com/api/reports/download/${fileId}`;
+
+      // Create a temporary link and trigger download
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = fileName.endsWith('.pdf') ? fileName : `${fileName}.pdf`;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(a);
+      }, 100);
+
+      console.log('Download initiated successfully');
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Error downloading file: ${errorMessage}`);
     }
   };
 
@@ -251,7 +320,7 @@ export default function ReportsPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">
                   <i className="ri-file-pdf-line mr-2"></i>
-                  Select PDF File
+                  Select PDF File (Max 10MB)
                 </label>
                 <div className="relative">
                   <input
@@ -261,6 +330,13 @@ export default function ReportsPage() {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-gray-50 hover:bg-white transition-colors duration-200 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                     required
                   />
+                  {selectedFile && (
+                    <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg text-sm">
+                      <i className="ri-checkbox-circle-line text-green-600 mr-2"></i>
+                      <span className="text-green-700 font-medium">{selectedFile.name}</span>
+                      <span className="text-green-600 ml-2">({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)</span>
+                    </div>
+                  )}
                 </div>
               </div>
               <button
@@ -344,23 +420,20 @@ export default function ReportsPage() {
                       </div>
                       {file.exists && (
                         <div className="flex space-x-2">
-                          <a
-                            href={`https://schedulink-backend.onrender.com/api/reports/file/${file.id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                          <button
+                            onClick={() => handleViewFile(file.id, file.fileName)}
                             className="inline-flex items-center justify-center flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-2 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-300 font-medium shadow-md hover:shadow-lg text-sm"
                           >
                             <i className="ri-eye-line mr-1"></i>
                             View
-                          </a>
-                          <a
-                            href={`https://schedulink-backend.onrender.com/api/reports/file/${file.id}`}
-                            download={file.fileName}
+                          </button>
+                          <button
+                            onClick={() => handleDownloadFile(file.id, file.fileName)}
                             className="inline-flex items-center justify-center flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-3 py-2 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-300 font-medium shadow-md hover:shadow-lg text-sm"
                           >
                             <i className="ri-download-line mr-1"></i>
                             Download
-                          </a>
+                          </button>
                           <button
                             onClick={() => handleDeleteFile(file.id)}
                             className="inline-flex items-center justify-center flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-2 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-300 font-medium shadow-md hover:shadow-lg text-sm"

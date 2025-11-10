@@ -1,28 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
-import EditEventModal from './EditEventModal';
 
-interface NotificationProps {
-  message: string;
-  type: 'success' | 'error' | 'info';
-  onClose: () => void;
-}
 
-function Notification({ message, type, onClose }: NotificationProps) {
-  const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
-
-  return (
-    <div className={`fixed top-4 right-4 z-50 ${bgColor} text-white px-6 py-4 rounded-lg shadow-lg flex items-center space-x-3 animate-fade-in`}>
-      <i className={`ri-${type === 'success' ? 'check' : type === 'error' ? 'error-warning' : 'information'}-line text-xl`}></i>
-      <span className="font-medium">{message}</span>
-      <button onClick={onClose} className="hover:bg-black/20 rounded-full p-1 transition-colors">
-        <i className="ri-close-line"></i>
-      </button>
-    </div>
-  );
-}
 
 interface Event {
   id: number;
@@ -59,14 +38,11 @@ interface Event {
 
 interface EventCardProps {
   event: Event;
-  onDelete: (id: number) => void;
-  onEdit: (id: number, updatedEvent: { name: string; description: string; start_date: string; end_date?: string; venues: number[]; equipment: {id: number, quantity: number}[]; application_date: string; rental_date: string; behalf_of: string; contact_info: string; nature_of_event: string; requires_equipment?: boolean; chairs_qty?: number; tables_qty?: number; projector?: boolean; other_equipment?: string; setup_start_time?: string; setup_end_time?: string; setup_hours?: number; event_start_time?: string; event_end_time?: string; event_hours?: number; cleanup_start_time?: string; cleanup_end_time?: string; cleanup_hours?: number; total_hours?: number; multi_day_schedule?: string | File }) => void;
+  onDelete: (event: Event) => void;
+  onEdit: (event: Event) => void;
 }
 
 export default function EventCard({ event, onDelete, onEdit }: EventCardProps) {
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -103,16 +79,7 @@ export default function EventCard({ event, onDelete, onEdit }: EventCardProps) {
   };
 
   const handleDeleteClick = () => {
-    setShowDeleteModal(true);
-  };
-
-  const handleDeleteConfirm = () => {
-    onDelete(event.id);
-    setShowDeleteModal(false);
-  };
-
-  const handleDeleteCancel = () => {
-    setShowDeleteModal(false);
+    onDelete(event);
   };
 
   return (
@@ -151,46 +118,24 @@ export default function EventCard({ event, onDelete, onEdit }: EventCardProps) {
       
       <div className="flex space-x-2">
         <button
-          onClick={() => setShowEditModal(true)}
+          onClick={() => onEdit(event)}
           className="flex-1 bg-gray-100 text-black px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium cursor-pointer whitespace-nowrap"
         >
+          <i className="ri-edit-line mr-1"></i>
           Edit
         </button>
         <button
           onClick={handleDeleteClick}
           className="flex-1 bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium cursor-pointer whitespace-nowrap"
         >
+          <i className="ri-delete-bin-line mr-1"></i>
           Delete
         </button>
       </div>
 
-      {showEditModal && (
-        <EditEventModal
-          event={event}
-          onClose={() => setShowEditModal(false)}
-          onSave={(id: number, updatedEvent: { name: string; description: string; start_date: string; end_date?: string; venues: number[]; equipment: {id: number, quantity: number}[]; application_date: string; rental_date: string; behalf_of: string; contact_info: string; nature_of_event: string; requires_equipment?: boolean; chairs_qty?: number; tables_qty?: number; projector?: boolean; other_equipment?: string; setup_start_time?: string; setup_end_time?: string; setup_hours?: number; event_start_time?: string; event_end_time?: string; event_hours?: number; cleanup_start_time?: string; cleanup_end_time?: string; cleanup_hours?: number; total_hours?: number; multi_day_schedule?: string }) => {
-            onEdit(id, updatedEvent);
-            setShowEditModal(false);
-            setNotification({ message: 'Event updated successfully!', type: 'success' });
-            setTimeout(() => setNotification(null), 3000);
-          }}
-        />
-      )}
 
-      <DeleteConfirmationModal
-        isOpen={showDeleteModal}
-        message={`Are you sure you want to delete the event "${event.name}"? This action cannot be undone.`}
-        onConfirm={handleDeleteConfirm}
-        onCancel={handleDeleteCancel}
-      />
 
-      {notification && (
-        <Notification
-          message={notification.message}
-          type={notification.type}
-          onClose={() => setNotification(null)}
-        />
-      )}
+
     </div>
   );
 }

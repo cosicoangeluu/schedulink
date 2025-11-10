@@ -70,15 +70,28 @@ export default function NotificationsPage() {
   const fetchNotifications = async () => {
     try {
       const token = localStorage.getItem('adminToken');
+      if (!token) {
+        console.error('No admin token found in localStorage');
+        throw new Error('No authentication token found. Please log in again.');
+      }
+
       const response = await fetch('https://schedulink-backend.onrender.com/api/notifications', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
+
       if (!response.ok) {
-        throw new Error('Failed to fetch notifications');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Failed to fetch notifications:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData
+        });
+        throw new Error(errorData.details || errorData.error || 'Failed to fetch notifications');
       }
+
       const data = await response.json();
       setNotifications(data);
     } catch (error) {
