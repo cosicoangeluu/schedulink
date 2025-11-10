@@ -99,13 +99,13 @@ export default function AdminDashboard() {
               <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-gray-900 via-red-800 to-gray-900 bg-clip-text text-transparent mb-2">
                 Admin Dashboard
               </h1>
-              <p className="text-gray-600 text-lg">Welcome back! Here's what's happening with your events today.</p>
+              <p className="text-black text-lg">Welcome back! Here's what's happening with your events today.</p>
             </div>
             <div className="hidden md:flex items-center space-x-4">
               <div className="bg-white/80 backdrop-blur-sm rounded-2xl px-6 py-3 shadow-lg border border-white/20">
                 <div className="flex items-center space-x-2">
                   <i className="ri-calendar-line text-red-500"></i>
-                  <span className="text-sm font-medium text-gray-700">
+                  <span className="text-sm font-medium text-black">
                     {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                   </span>
                 </div>
@@ -144,23 +144,23 @@ export default function AdminDashboard() {
                 </button>
               </div>
 
-              {/* Manage Notifications */}
+              {/* Manage Resources */}
               <div className="group bg-gradient-to-br from-blue-50/70 to-indigo-50/70 rounded-xl p-4 hover:shadow-lg transition-all duration-300 border border-blue-100/50 text-center">
                 <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg mx-auto mb-3 group-hover:scale-110 transition-transform duration-300">
-                  <i className="ri-notification-3-line text-xl text-white"></i>
+                  <i className="ri-folder-line text-xl text-white"></i>
                 </div>
                 <div className="mb-2">
-                  <p className="text-2xl font-bold text-gray-900">{pendingCount || 0}</p>
-                  <p className="text-xs text-gray-500 font-medium">Active</p>
+                  <p className="text-2xl font-bold text-gray-900">Files</p>
+                  <p className="text-xs text-gray-500 font-medium">Available</p>
                 </div>
-                <h4 className="text-sm font-semibold text-gray-900 mb-1">Notifications</h4>
-                <p className="text-xs text-gray-600 mb-3">Manage system alerts</p>
+                <h4 className="text-sm font-semibold text-gray-900 mb-1">Resources</h4>
+                <p className="text-xs text-gray-600 mb-3">Manage event resources</p>
                 <button
-                  onClick={() => router.push('/notifications')}
+                  onClick={() => router.push('/resources')}
                   className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white py-2 px-3 rounded-lg hover:from-blue-600 hover:to-indigo-600 transition-all duration-300 shadow-lg hover:shadow-blue-500/25 font-semibold text-xs"
                 >
                   <span className="flex items-center justify-center">
-                    Manage
+                    Manage Resource
                     <i className="ri-arrow-right-line ml-1 group-hover:translate-x-1 transition-transform duration-300"></i>
                   </span>
                 </button>

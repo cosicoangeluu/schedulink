@@ -39,6 +39,8 @@ export default function ReportsPage() {
   const [filesError, setFilesError] = useState<string | null>(null);
   const [successModalOpen, setSuccessModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [fileToDelete, setFileToDelete] = useState<number | null>(null);
 
   useEffect(() => {
     fetchEventsAndAttendees();
@@ -163,32 +165,44 @@ export default function ReportsPage() {
   };
 
   const handleDeleteFile = async (fileId: number) => {
-    if (!confirm('Are you sure you want to delete this report? This action cannot be undone.')) {
-      return;
-    }
+    setFileToDelete(fileId);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!fileToDelete) return;
 
     try {
-      const token = localStorage.getItem('adminToken');
-      const response = await fetch(`https://schedulink-backend.onrender.com/api/reports/${fileId}`, {
+      const response = await fetch(`https://schedulink-backend.onrender.com/api/reports/${fileToDelete}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
 
       if (response.ok) {
+        setDeleteModalOpen(false);
+        setFileToDelete(null);
         setSuccessMessage('Report deleted successfully!');
         setSuccessModalOpen(true);
         fetchUploadedFiles();
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        setDeleteModalOpen(false);
+        setFileToDelete(null);
         alert(`Failed to delete report: ${errorData.error || 'Please try again'}`);
       }
     } catch (error) {
       console.error('Error deleting report:', error);
+      setDeleteModalOpen(false);
+      setFileToDelete(null);
       alert('Error deleting report');
     }
+  };
+
+  const cancelDelete = () => {
+    setDeleteModalOpen(false);
+    setFileToDelete(null);
   };
 
   const handleViewFile = async (fileId: number, fileName: string) => {
@@ -463,6 +477,58 @@ export default function ReportsPage() {
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {deleteModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 animate-fade-in">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                  <i className="ri-delete-bin-line text-red-600 text-2xl"></i>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900">Confirm Deletion</h3>
+              </div>
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to delete this report? This action cannot be undone.
+              </p>
+              <div className="flex space-x-3">
+                <button
+                  onClick={cancelDelete}
+                  className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 transition-all font-medium shadow-md hover:shadow-lg"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Success Modal */}
+        {successModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 animate-fade-in">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                  <i className="ri-checkbox-circle-line text-green-600 text-2xl"></i>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900">Success</h3>
+              </div>
+              <p className="text-gray-600 mb-6">{successMessage}</p>
+              <button
+                onClick={() => setSuccessModalOpen(false)}
+                className="w-full px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all font-medium shadow-md hover:shadow-lg"
+              >
+                OK
+              </button>
+            </div>
           </div>
         )}
 

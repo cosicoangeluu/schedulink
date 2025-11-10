@@ -645,9 +645,9 @@ export default function AddEventModal({ onClose, onAdd }: AddEventModalProps): R
                                         type="number"
                                         min="0"
                                         max={equipment.available}
-                                        value={selectedItem?.quantity || 0}
+                                        value={selectedItem?.quantity || ''}
                                         onChange={(e) => handleEquipmentChange(equipment.id, parseInt(e.target.value) || 0)}
-                                        className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm mr-3"
+                                        className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm text-black mr-3"
                                         placeholder="Qty"
                                       />
                                       <div className="flex-1">
