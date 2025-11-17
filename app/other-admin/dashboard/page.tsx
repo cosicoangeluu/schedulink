@@ -3,6 +3,7 @@
 import ViewEventModal from '@/app/events/ViewEventModal';
 import { useEffect, useRef, useState } from 'react';
 import Sidebar from '../../../components/Sidebar';
+import { API_BASE_URL, API_ENDPOINTS } from '../../../lib/api-config';
 
 interface Event {
   id: number;
@@ -47,7 +48,7 @@ export default function OtherAdminDashboard() {
 
   // SSE setup - runs once on mount
   useEffect(() => {
-    const eventSource = new EventSource('https://schedulink-backend.onrender.com/api/sse');
+    const eventSource = new EventSource(API_ENDPOINTS.sse);
     eventSourceRef.current = eventSource;
 
     eventSource.onmessage = (event) => {
@@ -62,12 +63,12 @@ export default function OtherAdminDashboard() {
       console.error('SSE error:', error);
       console.error('SSE readyState:', eventSource.readyState);
       if (eventSource.readyState === EventSource.CLOSED) {
-        
+
         // Attempt to reconnect after 5 seconds
         setTimeout(() => {
           if (eventSourceRef.current?.readyState === EventSource.CLOSED) {
             eventSourceRef.current?.close();
-            const newEventSource = new EventSource('https://schedulink-backend.onrender.com/api/sse');
+            const newEventSource = new EventSource(API_ENDPOINTS.sse);
             eventSourceRef.current = newEventSource;
             // Re-attach handlers
             newEventSource.onmessage = eventSource.onmessage;
@@ -91,7 +92,7 @@ export default function OtherAdminDashboard() {
 
   const fetchApprovedEvents = () => {
     // No token needed for public calendar view - backend allows unauthenticated access to approved events
-    fetch('https://schedulink-backend.onrender.com/api/events?status=approved', {
+    fetch(`${API_ENDPOINTS.events}?status=approved`, {
       headers: {
         'Content-Type': 'application/json'
       }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { API_BASE_URL, API_ENDPOINTS } from '../../lib/api-config';
 
 interface Event {
   id: number;
@@ -45,7 +46,7 @@ export default function EventCard({ event }: EventCardProps) {
             // No token needed for public resource details
             const equipmentIds = event.equipment.map((eq: any) => eq.id);
             const equipmentPromises = equipmentIds.map((id: number) =>
-              fetch(`https://schedulink-backend.onrender.com/api/resources/${id}`, {
+              fetch(`${API_ENDPOINTS.resources}/${id}`, {
                 headers: {
                   'Content-Type': 'application/json'
                 }
@@ -67,7 +68,7 @@ export default function EventCard({ event }: EventCardProps) {
           if (event.venues.length > 0) {
             // No token needed for public venue details
             const venuePromises = event.venues.map((venueId: number) =>
-              fetch(`https://schedulink-backend.onrender.com/api/venues/${venueId}`, {
+              fetch(`${API_ENDPOINTS.venues}/${venueId}`, {
                 headers: {
                   'Content-Type': 'application/json'
                 }

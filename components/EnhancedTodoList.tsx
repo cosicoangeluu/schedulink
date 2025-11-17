@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { API_BASE_URL, API_ENDPOINTS } from '@/lib/api-config';
 
 interface Task {
   id: number;
@@ -41,7 +42,7 @@ export default function EnhancedTodoList({ isCompact = false, onCollapse }: Enha
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const res = await fetch(`https://schedulink-backend.onrender.com/api/tasks?date=${date}`, {
+      const res = await fetch(`${API_ENDPOINTS.tasks}?date=${date}`, {
         headers
       });
       const data = await res.json();
@@ -69,7 +70,7 @@ export default function EnhancedTodoList({ isCompact = false, onCollapse }: Enha
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const res = await fetch('https://schedulink-backend.onrender.com/api/tasks', {
+      const res = await fetch(API_ENDPOINTS.tasks, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -105,7 +106,7 @@ export default function EnhancedTodoList({ isCompact = false, onCollapse }: Enha
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const res = await fetch('https://schedulink-backend.onrender.com/api/tasks', {
+      const res = await fetch(API_ENDPOINTS.tasks, {
         method: 'POST',
         headers,
         body: JSON.stringify(newTask)
@@ -133,7 +134,7 @@ export default function EnhancedTodoList({ isCompact = false, onCollapse }: Enha
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      await fetch(`https://schedulink-backend.onrender.com/api/tasks/${taskId}`, {
+      await fetch(`${API_ENDPOINTS.tasks}/${taskId}`, {
         method: 'PUT',
         headers,
         body: JSON.stringify({ completed: !completed })
@@ -159,7 +160,7 @@ export default function EnhancedTodoList({ isCompact = false, onCollapse }: Enha
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      await fetch(`https://schedulink-backend.onrender.com/api/tasks/${taskToDelete}`, {
+      await fetch(`${API_ENDPOINTS.tasks}/${taskToDelete}`, {
         method: 'DELETE',
         headers
       });

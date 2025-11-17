@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { API_BASE_URL, API_ENDPOINTS } from '../../lib/api-config';
 
 interface Admin {
   id: number;
@@ -37,7 +38,7 @@ export default function AdminManagement() {
 
   const fetchAdmins = async (token: string) => {
     try {
-      const response = await fetch('https://schedulink-backend.onrender.com/api/auth/admins', {
+      const response = await fetch(API_ENDPOINTS.auth.admins, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -61,7 +62,7 @@ export default function AdminManagement() {
 
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch('https://schedulink-backend.onrender.com/api/auth/admins', {
+      const response = await fetch(API_ENDPOINTS.auth.admins, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -97,7 +98,7 @@ export default function AdminManagement() {
 
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch(`https://schedulink-backend.onrender.com/api/auth/admins/${selectedAdmin.id}`, {
+      const response = await fetch(`${API_ENDPOINTS.auth.admins}/${selectedAdmin.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -127,7 +128,7 @@ export default function AdminManagement() {
 
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch(`https://schedulink-backend.onrender.com/api/auth/admins/${adminId}`, {
+      const response = await fetch(`${API_ENDPOINTS.auth.admins}/${adminId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

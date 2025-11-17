@@ -1,4 +1,5 @@
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { API_ENDPOINTS } from '@/lib/api-config';
 
 interface NotificationsContextType {
   pendingCount: number;
@@ -15,7 +16,7 @@ export const NotificationsProvider = ({ children }: { children: ReactNode }) => 
 
   const fetchPendingCount = async () => {
     try {
-      const res = await fetch('https://schedulink-backend.onrender.com/api/notifications');
+      const res = await fetch(API_ENDPOINTS.notifications);
       const data = await res.json();
       if (Array.isArray(data)) {
         const pending = data.filter((n) => n.status === 'pending').length;

@@ -5,6 +5,7 @@ import { useRole } from '../../../components/RoleContext';
 import Sidebar from '../../../components/Sidebar';
 import SuccessNotificationModal from '../../../components/SuccessNotificationModal';
 import AddEventModal from '../../events/AddEventModal';
+import { API_BASE_URL, API_ENDPOINTS } from '../../../lib/api-config';
 
 interface Event {
   id: number;
@@ -49,7 +50,7 @@ export default function StudentDashboard() {
   const fetchApprovedEvents = async () => {
     try {
       // No token needed for public calendar view - backend allows unauthenticated access to approved events
-      const response = await fetch('https://schedulink-backend.onrender.com/api/events?status=approved', {
+      const response = await fetch(`${API_ENDPOINTS.events}?status=approved`, {
         headers: {
           'Content-Type': 'application/json'
         }
@@ -127,7 +128,7 @@ export default function StudentDashboard() {
     }
 
     const token = localStorage.getItem('adminToken');
-    fetch('https://schedulink-backend.onrender.com/api/events', {
+    fetch(API_ENDPOINTS.events, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -158,7 +159,7 @@ export default function StudentDashboard() {
     formData.append('uploadedBy', role);
 
     try {
-      const response = await fetch('https://schedulink-backend.onrender.com/api/reports/upload', {
+      const response = await fetch(`${API_ENDPOINTS.reports}/upload`, {
         method: 'POST',
         body: formData,
       });

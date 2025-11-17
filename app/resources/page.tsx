@@ -7,6 +7,7 @@ import AddResourceModal from './AddResourceModal';
 import EditResourceModal from './EditResourceModal';
 import EventCard from './EventCard';
 import ResourceCard from './ResourceCard';
+import { API_BASE_URL, API_ENDPOINTS } from '../../lib/api-config';
 
 interface Resource {
   id: number;
@@ -55,9 +56,9 @@ export default function ResourcesPage() {
         'Content-Type': 'application/json'
       };
       const [resourcesRes, venuesRes, eventsRes] = await Promise.all([
-        fetch('https://schedulink-backend.onrender.com/api/resources', { headers }),
-        fetch('https://schedulink-backend.onrender.com/api/venues', { headers }),
-        fetch('https://schedulink-backend.onrender.com/api/events', { headers })
+        fetch(API_ENDPOINTS.resources, { headers }),
+        fetch(API_ENDPOINTS.venues, { headers }),
+        fetch(API_ENDPOINTS.events, { headers })
       ]);
 
       if (!resourcesRes.ok || !venuesRes.ok || !eventsRes.ok) {
@@ -87,8 +88,8 @@ export default function ResourcesPage() {
   const handleDeleteResource = async (id: number, type: 'equipment' | 'venue') => {
     try {
       const token = localStorage.getItem('adminToken');
-      const endpoint = type === 'equipment' ? 'resources' : 'venues';
-      const response = await fetch(`https://schedulink-backend.onrender.com/api/${endpoint}/${id}`, {
+      const endpoint = type === 'equipment' ? API_ENDPOINTS.resources : API_ENDPOINTS.venues;
+      const response = await fetch(`${endpoint}/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -115,8 +116,8 @@ export default function ResourcesPage() {
   const handleAddResource = async (resourceData: any) => {
     try {
       const token = localStorage.getItem('adminToken');
-      const endpoint = resourceData.category === 'Venue' ? 'venues' : 'resources';
-      const response = await fetch(`https://schedulink-backend.onrender.com/api/${endpoint}`, {
+      const endpoint = resourceData.category === 'Venue' ? API_ENDPOINTS.venues : API_ENDPOINTS.resources;
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -146,8 +147,8 @@ export default function ResourcesPage() {
   const handleEditResource = async (resourceData: Resource) => {
     try {
       const token = localStorage.getItem('adminToken');
-      const endpoint = resourceData.type === 'venue' ? 'venues' : 'resources';
-      const response = await fetch(`https://schedulink-backend.onrender.com/api/${endpoint}/${resourceData.id}`, {
+      const endpoint = resourceData.type === 'venue' ? API_ENDPOINTS.venues : API_ENDPOINTS.resources;
+      const response = await fetch(`${endpoint}/${resourceData.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

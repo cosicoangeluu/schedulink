@@ -1,11 +1,21 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEventForm } from './useEventForm';
+import { API_ENDPOINTS } from '@/lib/api-config';
 
 interface EquipmentItem {
   id: number;
   quantity: number;
+}
+
+interface Conflict {
+  eventId: number;
+  eventName: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  conflictingVenues: { id: number; name: string }[];
 }
 
 interface EditEventModalProps {
@@ -44,14 +54,128 @@ interface EditEventModalProps {
 }
 
 export default function EditEventModal({ event, onClose, onSave }: EditEventModalProps): React.ReactElement {
+  const [equipmentErrors, setEquipmentErrors] = useState<{ [key: number]: string }>({});
+  const [conflicts, setConflicts] = useState<Conflict[]>([]);
+  const [showConflictWarning, setShowConflictWarning] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [liveConflicts, setLiveConflicts] = useState<Conflict[]>([]);
+  const [isCheckingConflicts, setIsCheckingConflicts] = useState(false);
   const { formData, availableVenues, availableEquipment, handleInputChange, handleVenueChange, handleEquipmentChange } = useEventForm({
     initialData: event,
     isEdit: true
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleEquipmentQuantityChange = (equipmentId: number, value: number, maxAvailable: number) => {
+    if (value > maxAvailable) {
+      setEquipmentErrors(prev => ({
+        ...prev,
+        [equipmentId]: `Maximum available: ${maxAvailable}`
+      }));
+      return;
+    }
+    setEquipmentErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors[equipmentId];
+      return newErrors;
+    });
+    handleEquipmentChange(equipmentId, value);
+  };
+
+  const checkConflicts = async () => {
+    if (!formData.start_date || formData.venues.length === 0) {
+      return [];
+    }
+
+    // Use only event start and end times (matching backend logic)
+    const startTime = formData.event_start_time;
+    const endTime = formData.event_end_time;
+
+    if (!startTime || !endTime) {
+      return [];
+    }
+
+    try {
+      const response = await fetch(API_ENDPOINTS.eventConflicts, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          start_date: formData.start_date,
+          end_date: formData.end_date || null,
+          venues: formData.venues,
+          event_start_time: formData.event_start_time,
+          event_end_time: formData.event_end_time,
+          setup_start_time: formData.setup_start_time,
+          cleanup_end_time: formData.cleanup_end_time,
+          excludeEventId: event.id,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.conflicts || [];
+      }
+    } catch (error) {
+      console.error('Error checking conflicts:', error);
+    }
+
+    return [];
+  };
+
+  // Real-time conflict checking whenever relevant fields change
+  useEffect(() => {
+    const checkLiveConflicts = async () => {
+      if (!formData.start_date || formData.venues.length === 0) {
+        setLiveConflicts([]);
+        return;
+      }
+
+      // Use only event start and end times (matching backend logic)
+      const startTime = formData.event_start_time;
+      const endTime = formData.event_end_time;
+
+      if (!startTime || !endTime) {
+        setLiveConflicts([]);
+        return;
+      }
+
+      setIsCheckingConflicts(true);
+      const detectedConflicts = await checkConflicts();
+      setLiveConflicts(detectedConflicts);
+      setIsCheckingConflicts(false);
+    };
+
+    // Debounce the conflict check to avoid too many API calls
+    const timeoutId = setTimeout(() => {
+      checkLiveConflicts();
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [formData.start_date, formData.end_date, formData.venues, formData.event_start_time, formData.event_end_time, formData.setup_start_time, formData.cleanup_end_time]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.name && formData.start_date) {
+      setIsLoading(true);
+
+      // Ensure end_date is set if not provided - auto-set to same day as start_date
+      let finalEndDate = formData.end_date;
+      if (!finalEndDate && formData.start_date) {
+        const startDate = formData.start_date.split('T')[0];
+        const endTime = formData.event_end_time || (formData.start_date.includes('T') ? formData.start_date.split('T')[1].substring(0, 5) : '23:59');
+        finalEndDate = `${startDate}T${endTime}`;
+      }
+
+      // Check for conflicts first - BLOCK submission if conflicts exist
+      const detectedConflicts = await checkConflicts();
+      if (detectedConflicts.length > 0) {
+        setConflicts(detectedConflicts);
+        setShowConflictWarning(true);
+        setIsLoading(false);
+        return; // Block submission
+      }
+
       let finalOtherEquipment = formData.other_equipment;
       if (formData.gym_sound_system) {
         finalOtherEquipment = finalOtherEquipment ? `${finalOtherEquipment}, Gym & Sound System` : 'Gym & Sound System';
@@ -64,7 +188,7 @@ export default function EditEventModal({ event, onClose, onSave }: EditEventModa
         name: formData.name,
         description: formData.description || '',
         start_date: formData.start_date,
-        ...(formData.end_date && { end_date: formData.end_date }),
+        ...(finalEndDate && { end_date: finalEndDate }),
         venues: formData.venues,
         equipment: formData.equipment,
         application_date: formData.application_date || '',
@@ -90,6 +214,7 @@ export default function EditEventModal({ event, onClose, onSave }: EditEventModa
         ...(formData.multi_day_schedule && { multi_day_schedule: formData.multi_day_schedule })
       };
       onSave(event.id, eventData);
+      setIsLoading(false);
       onClose();
     }
   };
@@ -236,16 +361,26 @@ export default function EditEventModal({ event, onClose, onSave }: EditEventModa
                       onChange={handleInputChange}
                       step="60"
                       className="w-full pl-4 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm text-black bg-gray-50 focus:bg-white transition-all duration-200"
+                      placeholder="Auto-filled from start date"
                     />
                     <i className="ri-time-line absolute right-3 top-3.5 text-gray-400"></i>
                   </div>
                   <p className="text-xs text-gray-500 mt-2 flex items-center">
                     <i className="ri-information-line mr-1"></i>
-                    Leave empty for single-day events
+                    Optional - Leave empty and we'll automatically set it to the same day as start date
                   </p>
+                  {formData.end_date && formData.start_date && formData.end_date.split('T')[0] === formData.start_date.split('T')[0] && (
+                    <div className="mt-2 flex items-center text-xs text-green-600 bg-green-50 px-3 py-2 rounded-lg">
+                      <i className="ri-check-line mr-1"></i>
+                      Single-day event: {new Date(formData.start_date).toLocaleDateString()}
+                      {formData.event_start_time && formData.event_end_time && (
+                        <span className="ml-1">({formData.event_start_time} - {formData.event_end_time})</span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
-                {formData.end_date && (
+                {formData.end_date && formData.start_date && formData.end_date.split('T')[0] !== formData.start_date.split('T')[0] && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <div className="flex items-start space-x-3">
                       <i className="ri-file-upload-line text-blue-600 mt-0.5"></i>
@@ -278,6 +413,59 @@ export default function EditEventModal({ event, onClose, onSave }: EditEventModa
                 </div>
               </div>
             </section>
+
+            {/* Live Conflict Warning */}
+            {liveConflicts.length > 0 && (
+              <div className="bg-red-50 border-2 border-red-500 rounded-xl p-5 shadow-md animate-pulse">
+                <div className="flex items-start space-x-3">
+                  <div className="flex-shrink-0">
+                    <i className="ri-error-warning-fill text-3xl text-red-600"></i>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-red-900 mb-2">⚠️ Conflict Detected!</h3>
+                    <p className="text-sm text-red-800 font-medium mb-3">
+                      This event conflicts with existing approved events. You cannot save these changes with the current date, time, and venue.
+                    </p>
+                    <div className="space-y-2">
+                      {liveConflicts.map((conflict, index) => (
+                        <div key={index} className="bg-white border border-red-300 rounded-lg p-3">
+                          <p className="font-semibold text-red-900 text-sm">{conflict.eventName}</p>
+                          <div className="mt-1 space-y-1 text-xs text-red-700">
+                            <p className="flex items-center">
+                              <i className="ri-calendar-line mr-1"></i>
+                              {new Date(conflict.date).toLocaleDateString()}
+                            </p>
+                            <p className="flex items-center">
+                              <i className="ri-time-line mr-1"></i>
+                              {conflict.startTime} - {conflict.endTime}
+                            </p>
+                            <p className="flex items-center">
+                              <i className="ri-map-pin-line mr-1"></i>
+                              {conflict.conflictingVenues.map(v => v.name).join(', ')}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-red-700 mt-3 font-medium">
+                      Please choose a different date, time, or venue to continue.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {isCheckingConflicts && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <div className="flex items-center space-x-3">
+                  <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <p className="text-sm text-blue-700">Checking for conflicts...</p>
+                </div>
+              </div>
+            )}
 
             {/* Application/Rental & Contact */}
             <section className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
@@ -677,25 +865,30 @@ export default function EditEventModal({ event, onClose, onSave }: EditEventModa
                             const selectedItem = formData.equipment.find(item => item.id === equipment.id);
                             const isMultiUnit = equipment.total > 1;
                             return (
-                              <div key={equipment.id} className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
-                                <div className="flex items-center flex-1">
-                                  {isMultiUnit ? (
-                                    <>
-                                      <input
-                                        type="number"
-                                        min="0"
-                                        max={equipment.available}
-                                        value={selectedItem?.quantity || 0}
-                                        onChange={(e) => handleEquipmentChange(equipment.id, parseInt(e.target.value) || 0)}
-                                        className="w-20 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm mr-3"
-                                        placeholder="Qty"
-                                      />
-                                      <div className="flex-1">
-                                        <span className="text-sm font-medium text-gray-900">{equipment.name}</span>
-                                        <p className="text-xs text-gray-600">Available: {equipment.available}</p>
-                                      </div>
-                                    </>
-                                  ) : (
+                              <div key={equipment.id} className="p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center flex-1">
+                                    {isMultiUnit ? (
+                                      <>
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          max={equipment.available}
+                                          value={selectedItem?.quantity || ''}
+                                          onChange={(e) => handleEquipmentQuantityChange(equipment.id, parseInt(e.target.value) || 0, equipment.available)}
+                                          className={`w-20 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent text-sm text-black mr-3 ${
+                                            equipmentErrors[equipment.id]
+                                              ? 'border-red-500 focus:ring-red-500'
+                                              : 'border-gray-300 focus:ring-red-500'
+                                          }`}
+                                          placeholder="Qty"
+                                        />
+                                        <div className="flex-1">
+                                          <span className="text-sm font-medium text-gray-900">{equipment.name}</span>
+                                          <p className="text-xs text-gray-600">Available: {equipment.available}</p>
+                                        </div>
+                                      </>
+                                    ) : (
                                     <>
                                       <input
                                         type="checkbox"
@@ -710,13 +903,20 @@ export default function EditEventModal({ event, onClose, onSave }: EditEventModa
                                         )}
                                       </div>
                                     </>
+                                    )}
+                                  </div>
+                                  {equipment.available > 0 && (
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                      <i className="ri-check-line mr-1"></i>
+                                      Available
+                                    </span>
                                   )}
                                 </div>
-                                {equipment.available > 0 && (
-                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    <i className="ri-check-line mr-1"></i>
-                                    Available
-                                  </span>
+                                {equipmentErrors[equipment.id] && (
+                                  <p className="text-xs text-red-600 mt-2 flex items-center">
+                                    <i className="ri-error-warning-line mr-1"></i>
+                                    {equipmentErrors[equipment.id]}
+                                  </p>
                                 )}
                               </div>
                             );
@@ -775,16 +975,106 @@ export default function EditEventModal({ event, onClose, onSave }: EditEventModa
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl hover:from-red-700 hover:to-red-800 transition-all duration-200 text-sm font-medium cursor-pointer shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                  disabled={isLoading || liveConflicts.length > 0}
+                  className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl hover:from-red-700 hover:to-red-800 transition-all duration-200 text-sm font-medium cursor-pointer shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <i className="ri-save-line mr-2"></i>
-                  Save Changes
+                  {isLoading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Saving...
+                    </>
+                  ) : liveConflicts.length > 0 ? (
+                    <>
+                      <i className="ri-forbid-line mr-2"></i>
+                      Cannot Save - Conflict Detected
+                    </>
+                  ) : (
+                    <>
+                      <i className="ri-save-line mr-2"></i>
+                      Save Changes
+                    </>
+                  )}
                 </button>
               </div>
             </div>
           </form>
         </div>
       </div>
+
+      {showConflictWarning && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl border border-red-200">
+            <div className="bg-gradient-to-r from-red-600 to-red-700 px-6 py-4 rounded-t-2xl">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                  <i className="ri-error-warning-line text-2xl text-white"></i>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Event Conflict Detected</h3>
+                  <p className="text-red-100 text-sm">The following conflicts were found with your event</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 max-h-[60vh] overflow-y-auto">
+              <div className="space-y-4">
+                {conflicts.map((conflict, index) => (
+                  <div key={index} className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="flex items-start space-x-3">
+                      <i className="ri-calendar-event-line text-red-600 text-xl mt-0.5"></i>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-gray-900">{conflict.eventName}</h4>
+                        <div className="mt-2 space-y-1 text-sm text-gray-700">
+                          <p className="flex items-center">
+                            <i className="ri-calendar-line mr-2 text-red-600"></i>
+                            Date: {new Date(conflict.date).toLocaleDateString()}
+                          </p>
+                          <p className="flex items-center">
+                            <i className="ri-time-line mr-2 text-red-600"></i>
+                            Time: {conflict.startTime} - {conflict.endTime}
+                          </p>
+                          <p className="flex items-start">
+                            <i className="ri-map-pin-line mr-2 text-red-600 mt-0.5"></i>
+                            <span>
+                              Conflicting Venues: {conflict.conflictingVenues.map(v => v.name).join(', ')}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-6 bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <i className="ri-information-line text-amber-600 text-xl mt-0.5"></i>
+                  <div className="text-sm text-amber-800">
+                    <p className="font-medium mb-1">What does this mean?</p>
+                    <p>Your event has the same date, time, and venue as an already approved event. Please choose a different venue or time slot to avoid conflicts.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 bg-gray-50 rounded-b-2xl flex justify-end">
+              <button
+                onClick={() => {
+                  setShowConflictWarning(false);
+                  setConflicts([]);
+                }}
+                className="px-6 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all duration-200 font-medium"
+              >
+                <i className="ri-close-line mr-2"></i>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

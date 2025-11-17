@@ -17,7 +17,22 @@
       "Bash(del .env.local)",
       "Bash(del libapi.ts)",
       "Bash(npm test:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(find:*)",
+      "Bash(if exist .next rmdir /s /q .next)",
+      "Bash(rm:*)",
+      "Bash(\"f:\\DASH BOARD\\schedulink-master\\app\\admin\\dashboard\\page.tsx\" )",
+      "Bash(\"f:\\DASH BOARD\\schedulink-master\\app\\reports\\page.tsx\" )",
+      "Bash(\"f:\\DASH BOARD\\schedulink-master\\components\\ChartSection.tsx\" )",
+      "Bash(\"f:\\DASH BOARD\\schedulink-master\\app\\resources\\page.tsx\" )",
+      "Bash(\"f:\\DASH BOARD\\schedulink-master\\app\\student\\dashboard\\page.tsx\" )",
+      "Bash(\"f:\\DASH BOARD\\schedulink-master\\components\\EnhancedTodoList.tsx\" )",
+      "Bash(\"f:\\DASH BOARD\\schedulink-master\\components\\TodoList.tsx\" )",
+      "Bash(\"f:\\DASH BOARD\\schedulink-master\\app\\other-admin\\dashboard\\page.tsx\" )",
+      "Bash(\"f:\\DASH BOARD\\schedulink-master\\app\\resources\\EventCard.tsx\" )",
+      "Bash(\"f:\\DASH BOARD\\schedulink-master\\app\\admin\\manage\\page.tsx\" )",
+      "Bash(\"f:\\DASH BOARD\\schedulink-master\\components\\RecentActivity.tsx\" )",
+      "Bash(\"f:\\DASH BOARD\\schedulink-master\\components\\UpcomingEvents.tsx\")"
     ],
     "deny": [],
     "ask": []

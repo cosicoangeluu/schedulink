@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { API_ENDPOINTS } from '@/lib/api-config';
 
 interface EquipmentItem {
   id: number;
@@ -121,7 +122,7 @@ export function useEventForm({ initialData = {}, isEdit = false }: UseEventFormP
   useEffect(() => {
     const fetchVenues = async () => {
       try {
-        const response = await fetch('https://schedulink-backend.onrender.com/api/venues');
+        const response = await fetch(API_ENDPOINTS.venues);
         if (response.ok) {
           const data = await response.json();
           setAvailableVenues(data);
@@ -133,7 +134,7 @@ export function useEventForm({ initialData = {}, isEdit = false }: UseEventFormP
 
     const fetchEquipment = async () => {
       try {
-        const response = await fetch('https://schedulink-backend.onrender.com/api/resources');
+        const response = await fetch(API_ENDPOINTS.resources);
         if (response.ok) {
           const data = await response.json();
           setAvailableEquipment(data);
@@ -146,6 +147,36 @@ export function useEventForm({ initialData = {}, isEdit = false }: UseEventFormP
     fetchVenues();
     fetchEquipment();
   }, []);
+
+  // Auto-set end_date to same day as start_date when start_date is provided
+  useEffect(() => {
+    if (formData.start_date && !formData.end_date) {
+      // Extract date from start_date
+      const startDate = formData.start_date.split('T')[0];
+
+      // Determine the end time based on event_end_time, or use the start time
+      let endTime: string;
+      if (formData.event_end_time) {
+        // Format event_end_time to ensure it has proper format (HH:MM)
+        endTime = formData.event_end_time.length === 5 ? formData.event_end_time : formData.event_end_time.substring(0, 5);
+      } else if (formData.start_date.includes('T')) {
+        // Use the time from start_date if available, ensuring HH:MM format
+        const timeFromStart = formData.start_date.split('T')[1];
+        endTime = timeFromStart.length >= 5 ? timeFromStart.substring(0, 5) : timeFromStart;
+      } else {
+        // Default to 23:59 if no time info available
+        endTime = '23:59';
+      }
+
+      // Set end_date to the same day with the end time in proper datetime-local format (YYYY-MM-DDTHH:MM)
+      const newEndDate = `${startDate}T${endTime}`;
+
+      setFormData(prev => ({
+        ...prev,
+        end_date: newEndDate
+      }));
+    }
+  }, [formData.start_date, formData.event_end_time, formData.end_date]);
 
   // Auto-compute hours based on start and end times
   useEffect(() => {

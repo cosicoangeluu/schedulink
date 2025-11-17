@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { API_ENDPOINTS } from '@/lib/api-config';
 
 export const dynamic = 'force-static';
 
@@ -19,7 +20,7 @@ export default function AdminLogin() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('https://schedulink-backend.onrender.com/api/auth/login', {
+      const response = await fetch(API_ENDPOINTS.auth.login, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

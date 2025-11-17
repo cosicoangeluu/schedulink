@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { API_ENDPOINTS } from '@/lib/api-config';
 
 interface EquipmentItem {
   id: number;
@@ -49,7 +50,7 @@ export default function ViewEventModal({ event, onClose }: ViewEventModalProps):
   useEffect(() => {
     const fetchVenues = async () => {
       try {
-        const response = await fetch('https://schedulink-backend.onrender.com/api/venues');
+        const response = await fetch(API_ENDPOINTS.venues);
         if (response.ok) {
           const data = await response.json();
           setAvailableVenues(data);
@@ -61,7 +62,7 @@ export default function ViewEventModal({ event, onClose }: ViewEventModalProps):
 
     const fetchEquipment = async () => {
       try {
-        const response = await fetch('https://schedulink-backend.onrender.com/api/resources');
+        const response = await fetch(API_ENDPOINTS.resources);
         if (response.ok) {
           const data = await response.json();
           setAvailableEquipment(data);

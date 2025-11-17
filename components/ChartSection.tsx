@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { API_BASE_URL, API_ENDPOINTS } from '@/lib/api-config';
 
 interface Event {
   id: number;
@@ -39,7 +40,7 @@ export default function ChartSection() {
       }
 
       // Fetch events
-      const eventsRes = await fetch('https://schedulink-backend.onrender.com/api/events', { headers });
+      const eventsRes = await fetch(API_ENDPOINTS.events, { headers });
 
       const eventsData = await eventsRes.json();
 

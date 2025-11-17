@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRole } from '../../components/RoleContext';
 import Sidebar from '../../components/Sidebar';
+import { API_BASE_URL, API_ENDPOINTS } from '../../lib/api-config';
 
 interface Event {
   id: number;
@@ -58,7 +59,7 @@ export default function ReportsPage() {
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
-      const response = await fetch('https://schedulink-backend.onrender.com/api/events?status=approved', {
+      const response = await fetch(`${API_ENDPOINTS.events}?status=approved`, {
         headers
       });
       if (response.ok) {
@@ -84,7 +85,7 @@ export default function ReportsPage() {
     setFilesError(null);
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch('https://schedulink-backend.onrender.com/api/reports', {
+      const response = await fetch(API_ENDPOINTS.reports, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -136,7 +137,7 @@ export default function ReportsPage() {
     try {
       console.log('Uploading file:', selectedFile.name, 'Size:', selectedFile.size, 'Type:', selectedFile.type);
 
-      const response = await fetch('https://schedulink-backend.onrender.com/api/reports/upload', {
+      const response = await fetch(`${API_ENDPOINTS.reports}/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -173,7 +174,7 @@ export default function ReportsPage() {
     if (!fileToDelete) return;
 
     try {
-      const response = await fetch(`https://schedulink-backend.onrender.com/api/reports/${fileToDelete}`, {
+      const response = await fetch(`${API_ENDPOINTS.reports}/${fileToDelete}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json'
@@ -211,7 +212,7 @@ export default function ReportsPage() {
 
       // Simply open the file URL directly in a new tab
       // The backend serves it with proper PDF headers
-      const fileUrl = `https://schedulink-backend.onrender.com/api/reports/file/${fileId}`;
+      const fileUrl = `${API_ENDPOINTS.reports}/file/${fileId}`;
       const newWindow = window.open(fileUrl, '_blank');
 
       if (!newWindow) {
@@ -229,7 +230,7 @@ export default function ReportsPage() {
       console.log('Attempting to download file:', fileId, fileName);
 
       // Use the download endpoint which forces attachment
-      const downloadUrl = `https://schedulink-backend.onrender.com/api/reports/download/${fileId}`;
+      const downloadUrl = `${API_ENDPOINTS.reports}/download/${fileId}`;
 
       // Create a temporary link and trigger download
       const a = document.createElement('a');

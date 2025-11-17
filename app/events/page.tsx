@@ -5,6 +5,7 @@ import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import Sidebar from '../../components/Sidebar';
 import EditEventModal from './EditEventModal';
 import EventCard from './EventCard';
+import { API_ENDPOINTS } from '@/lib/api-config';
 
 interface Event {
   id: number;
@@ -59,7 +60,7 @@ export default function EventsPage() {
       console.error('No admin token found. Please log in as admin.');
       return;
     }
-    fetch('https://schedulink-backend.onrender.com/api/events', {
+    fetch(API_ENDPOINTS.events, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -92,7 +93,7 @@ export default function EventsPage() {
   const handleDeleteEvent = async (eventId: number) => {
     const token = localStorage.getItem('adminToken');
     try {
-      const res = await fetch(`https://schedulink-backend.onrender.com/api/events/${eventId}`, {
+      const res = await fetch(`${API_ENDPOINTS.events}/${eventId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -129,7 +130,7 @@ export default function EventsPage() {
 
     const token = localStorage.getItem('adminToken');
     try {
-      const res = await fetch('https://schedulink-backend.onrender.com/api/events', {
+      const res = await fetch(API_ENDPOINTS.events, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -167,7 +168,7 @@ export default function EventsPage() {
 
     const token = localStorage.getItem('adminToken');
     try {
-      const res = await fetch(`https://schedulink-backend.onrender.com/api/events/${eventId}`, {
+      const res = await fetch(`${API_ENDPOINTS.events}/${eventId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`

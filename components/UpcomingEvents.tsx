@@ -3,6 +3,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { API_BASE_URL, API_ENDPOINTS } from '@/lib/api-config';
 
 interface Event {
   id: number;
@@ -26,7 +27,7 @@ export default function UpcomingEvents() {
 
   const fetchUpcomingEvents = async () => {
     try {
-      const eventsRes = await fetch('https://schedulink-backend.onrender.com/api/events?status=approved');
+      const eventsRes = await fetch(`${API_ENDPOINTS.events}?status=approved`);
 
       const eventsData = await eventsRes.json();
 

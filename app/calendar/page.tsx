@@ -6,6 +6,7 @@ import Sidebar from '../../components/Sidebar';
 import { useNotifications } from '../../context/NotificationsContext';
 import AddEventModal from '../events/AddEventModal';
 import ViewEventModal from '../events/ViewEventModal';
+import { API_BASE_URL, API_ENDPOINTS } from '@/lib/api-config';
 
 interface Event {
   id: number;
@@ -73,7 +74,7 @@ export default function CalendarPage() {
 
   const fetchApprovedEvents = () => {
     // No token needed for public calendar view - backend allows unauthenticated access to approved events
-    fetch('https://schedulink-backend.onrender.com/api/events?status=approved', {
+    fetch(`${API_ENDPOINTS.events}?status=approved`, {
       headers: {
         'Content-Type': 'application/json'
       }
@@ -108,8 +109,11 @@ export default function CalendarPage() {
 
   // Helper function to normalize dates to local midnight
   const normalizeDate = (dateStr: string): Date => {
-    const date = new Date(dateStr);
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    // Parse the date string directly to avoid timezone issues
+    // Handle both ISO format (YYYY-MM-DDTHH:MM:SS) and MySQL format (YYYY-MM-DD HH:MM:SS)
+    const dateOnly = dateStr.split('T')[0].split(' ')[0]; // Extract YYYY-MM-DD
+    const [year, month, day] = dateOnly.split('-').map(Number);
+    return new Date(year, month - 1, day); // month is 0-indexed in Date constructor
   };
 
   const eventsByDate: { [key: string]: Event[] } = {};
@@ -117,12 +121,31 @@ export default function CalendarPage() {
     const startDate = normalizeDate(event.start_date);
     const endDate = event.end_date ? normalizeDate(event.end_date) : startDate;
 
-    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-      const dateKey = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
+    // For same-day events (where start and end are the same day), only add to that single day
+    const isSameDay = startDate.getTime() === endDate.getTime();
+
+    if (isSameDay) {
+      // Single day event - only add to start date
+      const dateKey = `${startDate.getFullYear()}-${(startDate.getMonth() + 1).toString().padStart(2, '0')}-${startDate.getDate().toString().padStart(2, '0')}`;
       if (!eventsByDate[dateKey]) {
         eventsByDate[dateKey] = [];
       }
-      eventsByDate[dateKey].push(event);
+      if (!eventsByDate[dateKey].find(e => e.id === event.id)) {
+        eventsByDate[dateKey].push(event);
+      }
+    } else {
+      // Multi-day event - add to all days from start to end (inclusive)
+      const currentDate = new Date(startDate);
+      while (currentDate <= endDate) {
+        const dateKey = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}-${currentDate.getDate().toString().padStart(2, '0')}`;
+        if (!eventsByDate[dateKey]) {
+          eventsByDate[dateKey] = [];
+        }
+        if (!eventsByDate[dateKey].find(e => e.id === event.id)) {
+          eventsByDate[dateKey].push(event);
+        }
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
     }
   });
 
@@ -190,7 +213,7 @@ export default function CalendarPage() {
         const currentEndWeekRow = Math.floor((firstDay + event.endDay - 1) / 7);
         
         // Check if they're in the same row and have overlapping weeks
-        return e.row === assignedRow && 
+        return e.row === assignedRow &&
                ((eStartWeekRow <= currentEndWeekRow && eEndWeekRow >= startWeekRow)) &&
                (e.event.endDay >= event.startDay && e.event.startDay <= event.endDay);
       });
@@ -289,7 +312,7 @@ export default function CalendarPage() {
     }
 
     const token = localStorage.getItem('adminToken');
-    fetch('https://schedulink-backend.onrender.com/api/events', {
+    fetch(API_ENDPOINTS.events, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -307,8 +330,6 @@ export default function CalendarPage() {
         // Just close modal and refresh notifications
         setShowAddModal(false);
         refreshNotifications();
-        // Optionally show a success message that event is pending approval
-        alert('Event created successfully! It will appear on the calendar once approved by an admin.');
       })
       .catch(err => {
         console.error('Failed to add event:', err);
@@ -446,7 +467,7 @@ export default function CalendarPage() {
 
                   {/* Event indicators */}
                   <div className="space-y-1">
-                    {eventsOnDay.slice(0, 3).map((event, idx) => {
+                    {eventsOnDay.slice(0, 3).map((event) => {
                       const eventColor = getEventColor(event.id);
                       // Use event_start_time if available, otherwise use start_date time
                       let eventTime = 'TBD';
@@ -489,7 +510,7 @@ export default function CalendarPage() {
 
                       return (
                         <div
-                          key={event.id}
+                          key={`event-${event.id}-${dateStr}`}
                           className={`text-xs p-1.5 rounded-lg ${eventColor.bg} text-white shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105 cursor-pointer truncate`}
                           onClick={(e) => {
                             e.stopPropagation();

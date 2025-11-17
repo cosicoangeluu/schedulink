@@ -8,6 +8,7 @@ import RecentActivity from '../../../components/RecentActivity';
 import Sidebar from '../../../components/Sidebar';
 import UpcomingEvents from '../../../components/UpcomingEvents';
 import { useNotifications } from '../../../context/NotificationsContext';
+import { API_BASE_URL, API_ENDPOINTS } from '../../../lib/api-config';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -37,7 +38,7 @@ export default function AdminDashboard() {
     };
 
     // Fetch total approved events
-    fetch('https://schedulink-backend.onrender.com/api/events', { headers })
+    fetch(API_ENDPOINTS.events, { headers })
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -49,7 +50,7 @@ export default function AdminDashboard() {
       .catch(err => console.error('Failed to fetch events:', err));
 
     // Check for upcoming tasks due within 10 minutes
-    fetch('https://schedulink-backend.onrender.com/api/tasks', { headers })
+    fetch(API_ENDPOINTS.tasks, { headers })
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {

@@ -6,6 +6,7 @@ import ApprovalNotificationModal from '../../components/ApprovalNotificationModa
 import Sidebar from '../../components/Sidebar';
 import ViewEventModal from '../events/ViewEventModal';
 import NotificationCard from './NotificationCard';
+import { API_BASE_URL, API_ENDPOINTS } from '@/lib/api-config';
 
 interface Notification {
   id: number;
@@ -69,15 +70,8 @@ export default function NotificationsPage() {
 
   const fetchNotifications = async () => {
     try {
-      const token = localStorage.getItem('adminToken');
-      if (!token) {
-        console.error('No admin token found in localStorage');
-        throw new Error('No authentication token found. Please log in again.');
-      }
-
-      const response = await fetch('https://schedulink-backend.onrender.com/api/notifications', {
+      const response = await fetch(API_ENDPOINTS.notifications, {
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -117,12 +111,10 @@ export default function NotificationsPage() {
     if (!pendingAction) return;
 
     try {
-      const token = localStorage.getItem('adminToken');
       const endpoint = pendingAction.type === 'approve' ? 'approve' : 'decline';
-      const response = await fetch(`https://schedulink-backend.onrender.com/api/notifications/${pendingAction.notificationId}/${endpoint}`, {
+      const response = await fetch(`${API_ENDPOINTS.notifications}/${pendingAction.notificationId}/${endpoint}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -161,11 +153,16 @@ export default function NotificationsPage() {
     if (!notification.eventId) return;
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await fetch(`https://schedulink-backend.onrender.com/api/events/${notification.eventId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json'
+      };
+
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_ENDPOINTS.events}/${notification.eventId}`, {
+        headers
       });
       if (!response.ok) {
         throw new Error('Failed to fetch event details');

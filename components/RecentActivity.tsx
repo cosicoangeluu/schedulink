@@ -2,6 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { API_BASE_URL, API_ENDPOINTS } from '@/lib/api-config';
 
 interface Event {
   id: number;
@@ -42,8 +43,8 @@ export default function RecentActivity() {
   const fetchRecentActivity = async () => {
     try {
       const [eventsRes, notificationsRes] = await Promise.all([
-        fetch('https://schedulink-backend.onrender.com/api/events'),
-        fetch('https://schedulink-backend.onrender.com/api/notifications')
+        fetch(API_ENDPOINTS.events),
+        fetch(API_ENDPOINTS.notifications)
       ]);
 
       const events = await eventsRes.json();

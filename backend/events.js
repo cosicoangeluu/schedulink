@@ -18,6 +18,203 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+// Helper function to check for event conflicts
+async function checkEventConflicts(eventData, excludeEventId = null) {
+  const { start_date, end_date, venues, event_start_time, event_end_time, setup_start_time, cleanup_end_time } = eventData;
+
+  console.log('=== START CONFLICT CHECK ===');
+  console.log('Event data received:', {
+    start_date,
+    end_date,
+    venues,
+    event_start_time,
+    event_end_time,
+    excludeEventId
+  });
+
+  // Parse venues if it's a string
+  const venueIds = typeof venues === 'string' ? JSON.parse(venues) : venues;
+
+  console.log('Parsed venue IDs:', venueIds);
+
+  if (!venueIds || venueIds.length === 0) {
+    return []; // No venues to check
+  }
+
+  // Use only event start and end times (NOT setup or cleanup times)
+  const eventStartTime = event_start_time;
+  const eventEndTime = event_end_time;
+
+  if (!eventStartTime || !eventEndTime) {
+    return []; // Cannot check conflicts without times
+  }
+
+  // Build query to find overlapping events
+  let query = `
+    SELECT e.*, e.id as event_id, e.name as event_name, e.venues as event_venues
+    FROM events e
+    WHERE e.status = 'approved'
+  `;
+
+  const params = [];
+
+  // Exclude current event if updating
+  if (excludeEventId) {
+    query += ` AND e.id != ?`;
+    params.push(excludeEventId);
+  }
+
+  // Check date overlap: events overlap if they occur on the same date
+  // For single-day events, check if start_date matches
+  // For multi-day events, check if date ranges overlap
+  query += ` AND (
+    (DATE(e.start_date) = DATE(?) OR
+     (e.end_date IS NOT NULL AND DATE(?) BETWEEN DATE(e.start_date) AND DATE(e.end_date)) OR
+     (e.end_date IS NOT NULL AND ? IS NOT NULL AND DATE(e.start_date) BETWEEN DATE(?) AND DATE(?)))
+  )`;
+  params.push(start_date, start_date, end_date, start_date, end_date);
+
+  const [events] = await pool.execute(query, params);
+
+  console.log(`Found ${events.length} approved events on the same date`);
+
+  // Filter events that have venue and time conflicts
+  const conflicts = [];
+
+  for (const existingEvent of events) {
+    console.log('Checking event:', existingEvent.event_name, 'ID:', existingEvent.event_id);
+    // Parse existing event venues
+    let existingVenues = [];
+    try {
+      existingVenues = existingEvent.event_venues ? JSON.parse(existingEvent.event_venues) : [];
+    } catch (e) {
+      existingVenues = [];
+    }
+
+    // Check if there's any common venue
+    const commonVenues = venueIds.filter(v => existingVenues.includes(v));
+
+    console.log('Venue check:', {
+      newEventVenues: venueIds,
+      existingEventVenues: existingVenues,
+      commonVenues: commonVenues
+    });
+
+    if (commonVenues.length === 0) {
+      console.log('No common venues, skipping');
+      continue; // No venue conflict, skip to next event
+    }
+
+    console.log('Common venues found, checking times...');
+
+    // Check time overlap - use only event times (NOT setup or cleanup times)
+    const existingStartTime = existingEvent.event_start_time;
+    const existingEndTime = existingEvent.event_end_time;
+
+    if (existingStartTime && existingEndTime) {
+      // Convert times to comparable format (minutes since midnight)
+      const timeToMinutes = (timeStr) => {
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        return hours * 60 + minutes;
+      };
+
+      const eventStartMinutes = timeToMinutes(eventStartTime);
+      const eventEndMinutes = timeToMinutes(eventEndTime);
+      const existingStartMinutes = timeToMinutes(existingStartTime);
+      const existingEndMinutes = timeToMinutes(existingEndTime);
+
+      // Check if times overlap
+      // Times overlap if: (start1 < end2) AND (end1 > start2)
+      console.log('Comparing times:', {
+        newEvent: { start: eventStartMinutes, end: eventEndMinutes },
+        existingEvent: { start: existingStartMinutes, end: existingEndMinutes, name: existingEvent.event_name },
+        overlaps: eventStartMinutes < existingEndMinutes && eventEndMinutes > existingStartMinutes
+      });
+
+      if (eventStartMinutes < existingEndMinutes && eventEndMinutes > existingStartMinutes) {
+        // Get venue names for the conflicting venues
+        const [venueRows] = await pool.execute(
+          `SELECT id, name FROM venues WHERE id IN (${commonVenues.join(',')})`,
+          []
+        );
+
+        console.log('CONFLICT DETECTED:', {
+          eventName: existingEvent.event_name,
+          venues: venueRows.map(v => v.name)
+        });
+
+        conflicts.push({
+          eventId: existingEvent.event_id,
+          eventName: existingEvent.event_name,
+          date: existingEvent.start_date,
+          startTime: existingStartTime,
+          endTime: existingEndTime,
+          conflictingVenues: venueRows
+        });
+      }
+    }
+  }
+
+  return conflicts;
+}
+
+// POST /api/events/check-conflicts - Check for event conflicts
+router.post('/check-conflicts', async (req, res) => {
+  try {
+    const { start_date, end_date, venues, event_start_time, event_end_time, setup_start_time, cleanup_end_time, excludeEventId } = req.body;
+
+    console.log('Checking conflicts for:', {
+      start_date,
+      end_date,
+      venues,
+      event_start_time,
+      event_end_time,
+      excludeEventId
+    });
+
+    const conflicts = await checkEventConflicts({
+      start_date,
+      end_date,
+      venues,
+      event_start_time,
+      event_end_time,
+      setup_start_time,
+      cleanup_end_time
+    }, excludeEventId);
+
+    console.log('Conflicts found:', conflicts.length);
+    console.log('=== END CONFLICT CHECK ===\n');
+
+    res.json({ conflicts });
+  } catch (error) {
+    console.error('Error checking conflicts:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/events/debug-approved - Debug endpoint to see all approved events
+router.get('/debug-approved', async (req, res) => {
+  try {
+    const [events] = await pool.execute(
+      'SELECT id, name, start_date, event_start_time, event_end_time, venues, status FROM events WHERE status = "approved" ORDER BY start_date DESC'
+    );
+
+    // Parse venues for display
+    const formattedEvents = events.map(event => ({
+      ...event,
+      venues: event.venues ? JSON.parse(event.venues) : []
+    }));
+
+    res.json({
+      count: events.length,
+      events: formattedEvents
+    });
+  } catch (error) {
+    console.error('Error fetching approved events:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // GET /api/events - Get all events or filter by status
 router.get('/', async (req, res) => {
   try {
@@ -147,6 +344,31 @@ router.post('/', upload.single('multi_day_schedule'), async (req, res) => {
   // Validate required fields
   if (!name || !start_date) {
     return res.status(400).json({ error: 'Event name and start date are required' });
+  }
+
+  // Check for conflicts before creating the event and BLOCK if conflicts exist
+  try {
+    const conflicts = await checkEventConflicts({
+      start_date,
+      end_date,
+      venues,
+      event_start_time,
+      event_end_time,
+      setup_start_time,
+      cleanup_end_time
+    });
+
+    if (conflicts.length > 0) {
+      // Block event creation and return conflict details
+      return res.status(409).json({
+        error: 'Event conflict detected',
+        message: 'This event conflicts with existing approved events at the same venue and time. Please choose a different venue or time slot.',
+        conflicts
+      });
+    }
+  } catch (conflictError) {
+    console.error('Error checking conflicts:', conflictError);
+    // Continue with creation if conflict check fails (to avoid blocking due to errors)
   }
 
   // Set default values for optional fields
@@ -297,6 +519,30 @@ router.put('/:id', upload.single('multi_day_schedule'), async (req, res) => {
   // Validate required fields
   if (!name || !start_date) {
     return res.status(400).json({ error: 'Event name and start date are required' });
+  }
+
+  // Check for conflicts before updating the event (excluding the current event)
+  try {
+    const conflicts = await checkEventConflicts({
+      start_date,
+      end_date,
+      venues,
+      event_start_time,
+      event_end_time,
+      setup_start_time,
+      cleanup_end_time
+    }, req.params.id);
+
+    if (conflicts.length > 0) {
+      return res.status(409).json({
+        error: 'Event conflict detected',
+        message: 'This event conflicts with existing approved events at the same venue and time',
+        conflicts
+      });
+    }
+  } catch (conflictError) {
+    console.error('Error checking conflicts:', conflictError);
+    // Continue with update if conflict check fails (to avoid blocking)
   }
 
   // Set default values for optional fields
